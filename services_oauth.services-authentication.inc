@@ -9,13 +9,17 @@ function services_oauth_services_authenticate_call($method, $args) {
   try {
     module_load_include('inc', 'oauth_common');
 
-    list($consumer, $token) = oauth_common_verify_request();
+    list($signed, $consumer, $token) = oauth_common_verify_request();
+
+    if (!$signed && (!isset($method['#verify_key']) || $method['#verify_key'])) {
+      throw new OAuthException('The request must be signed');
+    }
 
     if ($consumer==NULL) {
       throw new OAuthException('Missing consumer token');
     }
 
-    if ($token==NULL && $method['#delegate-key']) {
+    if ($token==NULL && $method['#auth']) {
       throw new OAuthException('Missing access token');
     }
 

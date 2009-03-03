@@ -155,7 +155,7 @@ function _services_oauth_user_applications($form_state, $account) {
 
     if (!empty($ci)) {
       foreach ($ci as $consumer) {
-        $apps[$consumer->consumer_key] = array(
+        $apps[$consumer->key] = array(
           '#prefix' => '<div class="consumer-application"><h3>' . $consumer->name . '</h3>',
           '#suffix' => '</div>',
           'type' => array(
@@ -166,7 +166,7 @@ function _services_oauth_user_applications($form_state, $account) {
           'consumer_key' => array(
             '#type' => 'item',
             '#title' => t('Consumer key'),
-            '#value' => $consumer->consumer_key,
+            '#value' => $consumer->key,
           ),
           'secret' => array(
             '#type' => 'fieldset',
@@ -175,7 +175,7 @@ function _services_oauth_user_applications($form_state, $account) {
             '#title' => t('Consumer secret'),
             'consumer_secret' => array(
               '#type' => 'item',
-              '#value' => $consumer->consumer_secret,
+              '#value' => $consumer->secret,
             ),
           ),
         );
@@ -226,6 +226,12 @@ function _services_oauth_user_applications_add($form_state, $account) {
     '#required' => TRUE,
   );
 
+  $form['callback_url'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Callback url'),
+    '#required' => FALSE,
+  );
+
   $form['type'] = array(
     '#type' => 'select',
     '#title' => t('Application type'),
@@ -248,7 +254,9 @@ function _services_oauth_user_applications_add_submit($form, $form_state) {
   module_load_include('inc', 'oauth_common');
 
   $v = $form_state['values'];
-  $key = oauth_common_create_consumer($v['uid'], $v['name'], $v['type']);
+  $consumer = new DrupalOAuthConsumer(user_password(32), user_password(32), $v['callback_url'], $v);
+  $consumer->write();
+
   drupal_set_message(t('Added the application !name', array('!name' => $v['name'])));
   drupal_goto(sprintf('user/%d/applications', $v['uid']));
 }

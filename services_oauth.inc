@@ -42,7 +42,7 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing consumer token');
     }
 
-    if ($token==NULL && $method['#auth']) {
+    if (empty($token->key) && $method['#auth']) {
       throw new OAuthException('Missing access token');
     }
 
@@ -72,11 +72,11 @@ function _services_oauth_alter_methods(&$methods) {
     if (!isset($method[$key]['#key'])) {
       $method['#key'] = TRUE;
     }
-    
+
     if (!isset($method['#verify_key'])) {
       $method['#verify_key'] = TRUE;
     }
-    
+
     // Check if we got custom settings for the method's authentication
     if (isset($auth[$key])) {
       switch ($auth[$key]) {

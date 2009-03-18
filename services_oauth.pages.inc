@@ -9,7 +9,7 @@ function _services_oauth_authorize() {
   $req = DrupalOAuthRequest::from_request();
   $token = $req->get_parameter('oauth_token');
   $callback = $req->get_parameter('oauth_callback');
-  $token = oauth_common_get_token($token);
+  $token = DrupalOAuthToken::load($token);
 
   // Check that we have a valid token
   if (!$token) {
@@ -69,19 +69,17 @@ function _services_oauth_authorize_submit(&$form, &$form_state) {
   // Save the list of all services that the user allowed the
   // consumer to do
   global $user;
-  $values = array(
-    'authorized'  => 1,
-    'uid'         => $user->uid,
-    'token_key'   => $parameters['oauth_token'],
-    'services'    => json_encode(array('*')),
-  );
-  drupal_write_record('oauth_common_token', $values, 'token_key');
+  $token = DrupalOAuthToken::load($parameters['oauth_token']);
+  $token->uid = $user->uid;
+  $token->authorized = 1;
+  $token->services = array('*');
+  $token->write(TRUE);
 
   // Pick the callback url apart and add the token parameter
   $callback = parse_url($parameters['oauth_callback']);
   $query = array();
   parse_str($callback['query'], $query);
-  $query['oauth_token'] = $parameters['oauth_token'];
+  $query['oauth_token'] = $token->key;
   $callback['query'] = http_build_query($query);
 
   // Return to the consumer site

@@ -1,2 +1,42 @@
 <?php
 // $Id$
+
+function services_oauth_install() {
+  drupal_install_schema('services_oauth');
+  
+  // Create default authorization levels
+  $insert = "INSERT INTO {services_oauth_authorization_levels}(name, title) VALUES('%s','%s')";
+  db_query($insert, array(':name' => 'read',    ':title' => 'Read access'));
+  db_query($insert, array(':name' => 'update',  ':title' => 'Update access'));
+  db_query($insert, array(':name' => 'create',  ':title' => 'Create access'));
+  db_query($insert, array(':name' => 'delete',  ':title' => 'Delete access'));
+}
+
+function services_oauth_uninstall() {
+  drupal_uninstall_schema('services_oauth');
+}
+
+function services_oauth_schema() {
+  $schema = array();
+
+  $schema['services_oauth_authorization_levels'] = array(
+    'description' => t('Stores the different authorization levels that are available for access tokens.'),
+    'fields' => array(
+      'name' => array(
+        'description' => t('The computer-readable name of the authorization level.'),
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'title' => array(
+        'description' => t('The localizable title of the authorization level.'),
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+    ),
+    'primary key' => array('name'),
+  );
+
+  return $schema;
+}

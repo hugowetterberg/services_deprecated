@@ -195,6 +195,36 @@ function _services_oauth_user_applications($form_state, $account) {
       '#type' => 'fieldset',
       '#title' => t('Authorizations'),
     );
+
+    $tokens = oauth_common_user_access_tokens($account->uid);
+    $consumers = array();
+    foreach ($tokens as $token) {
+      if (!isset($consumers[$token->consumer_key])) {
+        $consumers[$token->consumer_key] = DrupalOAuthConsumer::load($token->consumer_key);
+      }
+      $consumer = $consumers[$token->consumer_key];
+
+      $auth[$token->key] = array(
+        '#prefix' => '<div class="consumer-authorization">',
+        '#suffix' => '</div>',
+        'consumer_name' => array(
+          '#type' => 'item',
+          '#title' => t('Application'),
+          '#value' => $consumer->name,
+        ),
+        'access_key' => array(
+          '#type' => 'item',
+          '#title' => t('Token key'),
+          '#value' => $token->key,
+        ),
+        'remove_link' => array(
+          '#type' => 'item',
+          '#value' => l('Edit authorization', 'user/' . $account->uid . 
+            '/applications/authorization/' . $token->key),
+        ),
+      );
+    }
+    
     $form['authorizations'] = $auth;
   }
 
@@ -206,6 +236,59 @@ function _services_oauth_user_applications_submit($form, $form_state) {
   if ($form_state['clicked_button']['#id']=='edit-create-consumer') {
     drupal_goto(sprintf('user/%d/applications/add', $form_state['values']['uid']));
   }
+}
+
+function _services_oauth_user_authorization_edit($form_state, $user, $key) {
+  $form = array();
+
+  $token = DrupalOAuthToken::load($key);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+
+  drupal_set_title(t('Authorization for !app', array('!app' => $consumer->name)));
+
+  $form['authorized'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Authorized'),
+    '#value' => $token->authorized,
+  );
+
+  $form['created'] = array(
+    '#type' => 'item',
+    '#title' => t('Created'),
+    '#value' => format_date($token->created),
+  );
+
+  $form['changed'] = array(
+    '#type' => 'item',
+    '#title' => t('Changed'),
+    '#value' => format_date($token->changed),
+  );
+
+  $form['key'] = array(
+    '#type' => 'item',
+    '#title' => t('Key'),
+    '#value' => $token->key,
+  );
+
+  $auth_txt = array();
+  foreach ($token->services as $service) {
+    if ($service == '*') {
+      $auth_txt[] = t('Full access');
+    }
+  }
+
+  $form['allowed'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Permissions'),
+  );
+
+  services_oauth_permissions_form($form['allowed'], $token->services);
+
+  return $form;
+}
+
+function services_oauth_permissions_form(&$form, $default_services=array('*')) {
+  
 }
 
 function _services_oauth_user_applications_add($form_state, $account) {

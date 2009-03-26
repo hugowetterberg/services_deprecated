@@ -71,6 +71,16 @@ function services_oauth_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['user/%user/applications/authorization/%'] = array(
+    'title' => 'Edit authorization',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_user_authorization_edit', 1, 4),
+    'access callback' => 'oauth_services_user_access',
+    'access arguments' => array(1),
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['admin/build/services/authentication'] = array(
     'title' => 'Authentication',
     'page callback' => 'drupal_get_form',
@@ -80,7 +90,28 @@ function services_oauth_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
+  $menu['admin/build/services/authorization'] = array(
+    'title' => 'Authorization levels',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_admin_authorization'),
+    'access arguments' => array('administer services'),
+    'file' => 'services_oauth.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
   return $menu;
+}
+
+function services_oauth_authorization_levels() {
+  global $levels;
+  if (!$levels) {
+    $levels = array();
+    $res = db_query("SELECT * FROM {services_oauth_authorization_levels}");
+    while ($level = db_fetch_object($res)) {
+      $levels[$level->name] = $level->title;
+    }
+  }
+  return $levels;
 }
 
 function oauth_services_user_access($user) {

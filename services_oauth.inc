@@ -23,6 +23,10 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing access token');
     }
 
+    if (!in_array($method['#authorization level'], $token->services)) {
+      throw new OAuthException('The consumer is not authorized to access this service');
+    }
+
     if ($token->uid) {
       global $user;
       $user = user_load($token->uid);
@@ -43,6 +47,8 @@ function _services_oauth_security_settings_submit() {
 
 function _services_oauth_alter_methods(&$methods) {
   $auth = variable_get('services_oauth_authentication_levels', array());
+  $authorization = variable_get('services_oauth_authorization_settings', array());
+  $autho_levels = services_oauth_authorization_levels();
 
   foreach ($methods as $key => &$method) {
     if (!isset($method[$key]['#auth'])) {
@@ -55,6 +61,19 @@ function _services_oauth_alter_methods(&$methods) {
 
     if (!isset($method['#verify_key'])) {
       $method['#verify_key'] = TRUE;
+    }
+
+    // Apply custom authorization level settings
+    if (isset($authorization[$key])) {
+      if (isset($autho_levels[$authorization[$key]])) {
+        $method['#authorization level'] = $authorization[$key];
+      }
+      else {
+        $method['#authorization level'] = '*';
+      }
+    }
+    if (!isset($method['#authorization level'])) {
+      $method['#authorization level'] = '*';
     }
 
     // Check if we got custom settings for the method's authentication

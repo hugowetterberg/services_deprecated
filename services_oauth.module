@@ -99,6 +99,15 @@ function services_oauth_menu() {
     'type' => MENU_LOCAL_TASK,
   );
 
+  $menu['admin/build/services/authorization/%/delete'] = array(
+    'title' => 'Delete authorization level',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_admin_authorization_delete', 4),
+    'access arguments' => array('administer services'),
+    'file' => 'services_oauth.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+
   return $menu;
 }
 
@@ -108,7 +117,7 @@ function services_oauth_authorization_levels() {
     $levels = array();
     $res = db_query("SELECT * FROM {services_oauth_authorization_levels}");
     while ($level = db_fetch_object($res)) {
-      $levels[$level->name] = $level->title;
+      $levels[$level->name] = $level;
     }
   }
   return $levels;
@@ -120,6 +129,25 @@ function oauth_services_user_access($user) {
 
 function _services_oauth_always_true() {
   return TRUE;
+}
+
+function services_oauth_write_authorization_level($name, $title, $description) {
+  $levels = services_oauth_authorization_levels();
+  $update = NULL;
+  if (isset($levels[$name])) {
+    $update = array('name');
+  }
+  drupal_write_record('services_oauth_authorization_levels', $values = array(
+    'name' => $name,
+    'title' => $title,
+    'description' => $description,
+  ), $update);
+}
+
+function services_oauth_delete_authorization_level($name) {
+  db_query("DELETE FROM {services_oauth_authorization_levels} WHERE name='%s'", array(
+    ':name' => $name,
+  ));
 }
 
 /**

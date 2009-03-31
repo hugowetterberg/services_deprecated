@@ -17,6 +17,8 @@ function _services_oauth_authorize() {
     return;
   }
 
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+
   // Redirect to the right form, or present an error.
   global $user;
   if ($user->uid) {
@@ -32,15 +34,71 @@ function _services_oauth_authorize() {
       return drupal_access_denied();
     }
 
+    drupal_set_title(t('Authorize !name', array(
+      '!name' => $consumer->name,
+    )));
+
     $form = array();
     $form['oauth_parameters'] = array(
       '#type'   => 'value',
       '#value'  => serialize($req->get_parameters()),
     );
+
+    $msgargs = array(
+      '!appname' => $consumer->name,
+      '!sitename' => variable_get('site_name', ''),
+    );
+
+    $form['message'] = array(
+      '#type' => 'item',
+      '#value' => t('The application !appname wants to access !sitename on your behalf, check the permissions that you would like the application to have.', $msgargs),
+    );
+
+    $form['warning'] = array(
+      '#type' => 'item',
+      '#value' => l(t('If you don\'t know what !appname is, or don\'t want to give it access to your content, just click here and we\'ll take you away from this page without granting !appname any access to !sitename.', $msgargs), 'oauth/authorization/deny/' . $token->key),
+      '#attributes' => array(
+        'class' => 'abort-authorization',
+      ),
+    );
+
+    $form['authorization'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Permissions'),
+      '#options' => $auth_levels,
+      'full_access' => array(
+        '#type' => 'checkbox',
+        '#title' => t('Full access'),
+        '#description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
+      ),
+    );
+
+    $auth_levels = services_oauth_authorization_levels();
+    $form['authorization']['levels'] = array(
+      '#tree' => TRUE,
+    );
+    foreach ($auth_levels as $name => $level) {
+      $auth_opt = array(
+        '#type' => 'checkbox',
+        '#title' => t($level->title, $msgargs),
+        '#description' => t($level->description, $msgargs),
+      );
+      $form['authorization']['levels'][$name] = $auth_opt;
+    }
+
+    $form['deny'] = array(
+      '#type'   => 'item',
+      '#value'  => l(t('Deny access'), 'oauth/authorization/deny/' . $token->key),
+      '#attributes' => array(
+        'class' => 'deny-access',
+      ),
+    );
+
     $form['confirm'] = array(
       '#type'   => 'submit',
       '#value'  => t('Grant access'),
     );
+
     return $form;
   }
   else {
@@ -56,15 +114,29 @@ function _services_oauth_authorize() {
   }
 }
 
-/**
- * Asks users for granting proper access/deny permissions for different services
- * Authorizes an existing oauth request token and redirects to sender.
- *
- * @ingroup form
- */
+function _services_oauth_authorize_validate($form, &$form_state) {
+  $values = $form_state['values'];
+  $got_permission = FALSE;
+
+  $auth_levels = services_oauth_authorization_levels();
+  foreach ($auth_levels as $name => $level) {
+    if ($values['levels'][$name]) {
+      $got_permission = TRUE;
+      break;
+    }
+  }
+
+  $got_permission = $got_permission || $values['full_access'];
+
+  if (!$got_permission) {
+    form_set_error('confirm', t('You haven\'t given the application access to anything. Click on "Deny access" or just close this window if you don\'t want to authorize it.'));
+  }
+}
+
 function _services_oauth_authorize_submit(&$form, &$form_state) {
+  $values = $form_state['values'];
   // Unserialize the stored oauth parameters
-  $parameters = unserialize($form_state['values']['oauth_parameters']);
+  $parameters = unserialize($values['oauth_parameters']);
 
   // Save the list of all services that the user allowed the
   // consumer to do
@@ -72,8 +144,24 @@ function _services_oauth_authorize_submit(&$form, &$form_state) {
   $token = DrupalOAuthToken::load($parameters['oauth_token']);
   $token->uid = $user->uid;
   $token->authorized = 1;
-  $token->services = array('*');
+  $token->services = array();
+
+  // Add services
+  if ($values['full_access']) {
+    $token->services[] = '*';
+  }
+  else {
+    $auth_levels = services_oauth_authorization_levels();
+    foreach ($auth_levels as $name => $level) {
+      if ($values['levels'][$name]) {
+        $token->services[] = $name;
+      }
+    }
+  }
+
   $token->write(TRUE);
+
+  $got_permission = $got_permission || $values['full_access'];
 
   // Pick the callback url apart and add the token parameter
   $callback = parse_url($parameters['oauth_callback']);
@@ -219,12 +307,12 @@ function _services_oauth_user_applications($form_state, $account) {
         ),
         'remove_link' => array(
           '#type' => 'item',
-          '#value' => l('Edit authorization', 'user/' . $account->uid . 
+          '#value' => l('Edit authorization', 'user/' . $account->uid .
             '/applications/authorization/' . $token->key),
         ),
       );
     }
-    
+
     $form['authorizations'] = $auth;
   }
 
@@ -288,7 +376,7 @@ function _services_oauth_user_authorization_edit($form_state, $user, $key) {
 }
 
 function services_oauth_permissions_form(&$form, $default_services=array('*')) {
-  
+
 }
 
 function _services_oauth_user_applications_add($form_state, $account) {

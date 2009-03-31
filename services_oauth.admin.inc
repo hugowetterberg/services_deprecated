@@ -132,8 +132,7 @@ function _services_oauth_admin_authentication() {
 
   $form['intro'] = array('#value' => '<p>' . t('You can change the lowest required OAuth authentication level and the authorization level for resources and methods here. This doesn\'t affect the access checks, so the security of your site <em>should</em> not be affected by changing the authentication requirements.') . '</p>');
 
-  $methods = services_get_all(FALSE);
-  $resources = services_get_all_resources(FALSE);
+  $resources = services_get_all_resources(TRUE);
   $auth_levels = array('*' => t('Full access'));
   foreach (services_oauth_authorization_levels() as $name => $level) {
     $auth_levels[$name] = t($level->title);

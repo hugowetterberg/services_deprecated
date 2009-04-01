@@ -24,6 +24,10 @@ function _services_oauth_authenticate_call($method, $args) {
         throw new OAuthException('Missing access token');
       }
 
+      if (!$token->authorized) {
+        throw new OAuthException('The access token is not authorized');
+      }
+
       if (!in_array('*', $token->services) && !in_array($method['#authorization level'], $token->services)) {
         throw new OAuthException('The consumer is not authorized to access this service');
       }

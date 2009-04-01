@@ -81,6 +81,16 @@ function services_oauth_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['user/%user/applications/authorization/%/delete'] = array(
+    'title' => 'Edit authorization',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_services_oauth_user_authorization_delete', 1, 4),
+    'access callback' => 'oauth_services_user_access',
+    'access arguments' => array(1),
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['admin/build/services/authentication'] = array(
     'title' => 'Authentication',
     'page callback' => 'drupal_get_form',

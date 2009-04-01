@@ -334,10 +334,20 @@ function _services_oauth_user_authorization_edit($form_state, $user, $key) {
 
   drupal_set_title(t('Authorization for !app', array('!app' => $consumer->name)));
 
+  $form['user'] = array(
+    '#type' => 'value',
+    '#value' => $user->uid,
+  );
+
+  $form['key'] = array(
+    '#type' => 'value',
+    '#value' => $token->key,
+  );
+
   $form['authorized'] = array(
     '#type' => 'checkbox',
     '#title' => t('Authorized'),
-    '#value' => $token->authorized,
+    '#default_value' => $token->authorized,
   );
 
   $form['created'] = array(
@@ -352,31 +362,135 @@ function _services_oauth_user_authorization_edit($form_state, $user, $key) {
     '#value' => format_date($token->changed),
   );
 
-  $form['key'] = array(
+  $form['key_item'] = array(
     '#type' => 'item',
     '#title' => t('Key'),
     '#value' => $token->key,
   );
-
-  $auth_txt = array();
-  foreach ($token->services as $service) {
-    if ($service == '*') {
-      $auth_txt[] = t('Full access');
-    }
-  }
 
   $form['allowed'] = array(
     '#type' => 'fieldset',
     '#title' => t('Permissions'),
   );
 
-  services_oauth_permissions_form($form['allowed'], $token->services);
+  services_oauth_permissions_form($form['allowed'], $consumer, $token->services);
+
+  $form['delete'] = array(
+    '#type' => 'item',
+    '#value' => l(t('Delete'), sprintf('user/%d/applications/authorization/%s/delete', $user->uid, $token->key)),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
 
   return $form;
 }
 
-function services_oauth_permissions_form(&$form, $default_services=array('*')) {
+function _services_oauth_user_authorization_edit_submit($form, $form_state) {
+  $values = $form_state['values'];
 
+  // Collect the authorization levels
+  $services = array();
+  foreach ($values['levels'] as $level => $allowed) {
+    if ($allowed) {
+      $services[] = $level;
+    }
+  }
+
+  $token = DrupalOAuthToken::load($values['key']);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+
+  $token->services = $services;
+  $token->authorized = $values['authorized'];
+  $token->write(TRUE);
+
+  drupal_set_message(t('The !consumer token !token was updated.', array(
+    '!consumer' => $consumer->name,
+    '!token' => $token->key)));
+  drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
+}
+
+function _services_oauth_user_authorization_delete($form_state, $user, $key) {
+  $token = DrupalOAuthToken::load($key);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+
+  drupal_set_title(t('Deleting authorization for "!title"', array(
+    '!title' => $consumer->name,
+  )));
+
+  $form = array(
+    'authorization' => array(
+      '#type' => 'value',
+      '#value' => $authorization,
+    ),
+  );
+
+  $form['user'] = array(
+    '#type' => 'value',
+    '#value' => $user->uid,
+  );
+
+  $form['key'] = array(
+    '#type' => 'value',
+    '#value' => $token->key,
+  );
+
+  $form['description'] = array(
+    '#type' => 'item',
+    '#value' => t('Are you sure that you want to delete the authorization for !name?', array(
+      '!name' => $consumer->name,
+    )),
+  );
+
+  $form['cancel'] = array(
+    '#type' => 'item',
+    '#value' => l(t('Cancel'), sprintf('user/%d/applications/authorization/%s', $user->uid, $token->key)),
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Delete'),
+  );
+
+  return $form;
+}
+
+function _services_oauth_user_authorization_delete_submit($form, $form_state) {
+  $token = DrupalOAuthToken::load($form_state['values']['key']);
+  $consumer = DrupalOAuthConsumer::load($token->consumer_key);
+  $token->delete();
+  drupal_set_message(t('The !consumer token !token was deleted.', array(
+    '!consumer' => $consumer->name,
+    '!token' => $token->key)));
+  drupal_goto(sprintf('user/%d/applications', $form_state['values']['user']));
+}
+
+function services_oauth_permissions_form(&$form, $consumer, $default_services=array('*')) {
+  $msgargs = array(
+    '!appname' => $consumer->name,
+    '!sitename' => variable_get('site_name', ''),
+  );
+
+  $auth_levels = array_merge(
+    array('*' => (object)array(
+      'title' => t('Full access'),
+      'description' => t('This will give !appname the same permissions that you normally have and will allow it to access the full range of services that !sitename provides.', $msgargs),
+    )), services_oauth_authorization_levels());
+  $form['authorization']['levels'] = array(
+    '#tree' => TRUE,
+  );
+
+  foreach ($auth_levels as $name => $level) {
+    $auth_opt = array(
+      '#type' => 'checkbox',
+      '#title' => t($level->title, $msgargs),
+      '#description' => t($level->description, $msgargs),
+      '#default_value' => in_array($name, $default_services),
+    );
+    $form['authorization']['levels'][$name] = $auth_opt;
+  }
 }
 
 function _services_oauth_user_applications_add($form_state, $account) {

@@ -165,6 +165,7 @@ function _services_oauth_admin_authentication() {
       $c['credentials'] = array(
         '#type' => 'radios',
         '#title' => t('Required authentication'),
+        '#description' => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
         '#options' => array(
           'none' => t('None'),
           'unsigned_consumer' => t('Unsigned with consumer key'),

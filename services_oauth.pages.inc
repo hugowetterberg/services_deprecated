@@ -168,7 +168,7 @@ function _services_oauth_authorize_submit(&$form, &$form_state) {
   $query = array();
   parse_str($callback['query'], $query);
   $query['oauth_token'] = $token->key;
-  $callback['query'] = http_build_query($query);
+  $callback['query'] = http_build_query($query, 'idx_', '&');
 
   // Return to the consumer site
   header('Location: ' . _services_oauth_glue_url($callback), TRUE, 302);

@@ -1,6 +1,9 @@
 <?php
 // $Id$
 
+/**
+ * Implementation of hook_install().
+ */
 function services_oauth_install() {
   drupal_install_schema('services_oauth');
 
@@ -16,10 +19,16 @@ function services_oauth_install() {
     ':description' => 'This will allow !appname to delete content from !sitename.'));
 }
 
+/**
+ * Implementation of hook_uninstall().
+ */
 function services_oauth_uninstall() {
   drupal_uninstall_schema('services_oauth');
 }
 
+/**
+ * Implementation of hook_schema().
+ */
 function services_oauth_schema() {
   $schema = array();
 

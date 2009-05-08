@@ -121,6 +121,12 @@ function services_oauth_menu() {
   return $menu;
 }
 
+/**
+ * Returns the authorization levels as an associative array
+ * keyed after the machine readable name.
+ *
+ * @return array
+ */
 function services_oauth_authorization_levels() {
   global $levels;
   if (!$levels) {
@@ -137,10 +143,29 @@ function oauth_services_user_access($user) {
   return user_edit_access($user) && (user_access('access services', $user) || user_access('services oauth register consumers', $user));
 }
 
+/**
+ * This function is used as a access callback
+ * when the authentication of the request shouldn't be
+ * done by the menu system.
+ *
+ * @return bool
+ *  Always returns TRUE
+ */
 function _services_oauth_always_true() {
   return TRUE;
 }
 
+/**
+ * Creates a new authorization level
+ *
+ * @param string $name
+ *  The machine-readable name of the authorization level
+ * @param string $title
+ *  The human-readable name of the authentication level
+ * @param string $description
+ *  The description of the authentication level
+ * @return void
+ */
 function services_oauth_write_authorization_level($name, $title, $description) {
   $levels = services_oauth_authorization_levels();
   $update = NULL;
@@ -154,6 +179,13 @@ function services_oauth_write_authorization_level($name, $title, $description) {
   ), $update);
 }
 
+/**
+ * Deletes a authorization level
+ *
+ * @param string $name
+ *  The machine-readable name of the authorization level
+ * @return void
+ */
 function services_oauth_delete_authorization_level($name) {
   db_query("DELETE FROM {services_oauth_authorization_levels} WHERE name='%s'", array(
     ':name' => $name,

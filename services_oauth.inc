@@ -1,6 +1,16 @@
 <?php
 // $Id$
 
+/**
+ * Authenticates a call using OAuth to verify the request.
+ *
+ * @param array $method
+ *  The method that's being called
+ * @param array $args
+ *  The arguments that are being used to call the method
+ * @return void|string
+ *  Returns nothing, or a error message if authentication fails
+ */
 function _services_oauth_authenticate_call($method, $args) {
   if (!isset($method['#key']) || !$method['#key']) {
     return FALSE;
@@ -19,6 +29,7 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing consumer token');
     }
 
+    // Validate the token, if it's required by the method
     if ($method['#auth']) {
       if (empty($token->key)) {
         throw new OAuthException('Missing access token');
@@ -28,11 +39,14 @@ function _services_oauth_authenticate_call($method, $args) {
         throw new OAuthException('The access token is not authorized');
       }
 
+      // Check that the consumer has been granted the required authorization level
       if (!in_array('*', $token->services) && !in_array($method['#authorization level'], $token->services)) {
         throw new OAuthException('The consumer is not authorized to access this service');
       }
     }
 
+    // Load the user if the request was authenticated using a token
+    // that's associated with a account.
     if ($token->uid) {
       global $user;
       $user = user_load($token->uid);
@@ -51,6 +65,14 @@ function _services_oauth_security_settings() {
 function _services_oauth_security_settings_submit() {
 }
 
+/**
+ * Alters the methods so that they fit the needs of the OAuth authentication module.
+ * This is also where the authentication and authorization levels that are configured
+ * in the administration interface are configured.
+ *
+ * @param array $methods
+ * @return void
+ */
 function _services_oauth_alter_methods(&$methods) {
   $auth = variable_get('services_oauth_authentication_levels', array());
   $authorization = variable_get('services_oauth_authorization_settings', array());

@@ -1,6 +1,13 @@
 <?php
 // $Id$
 
+/**
+ * Menu system callback that generates a form for
+ * administrating the authorization levels.
+ *
+ * @return array
+ *  A form array.
+ */
 function _services_oauth_admin_authorization() {
   $form = array();
 
@@ -81,6 +88,16 @@ function _services_oauth_admin_authorization_submit($form, $form_state) {
   cache_clear_all('services:', 'cache', TRUE);
 }
 
+/**
+ * Menu system callback for the confirmation page when deleting a authorization
+ * level.
+ *
+ * @param array $form_state
+ * @param string $authorization
+ *  The machine-readable name of the authorization level.
+ * @return array
+ *  A form array.
+ */
 function _services_oauth_admin_authorization_delete($form_state, $authorization) {
   $levels = services_oauth_authorization_levels();
 
@@ -125,6 +142,13 @@ function _services_oauth_admin_authorization_delete_submit($form, $form_state) {
   drupal_goto('admin/build/services/authorization');
 }
 
+/**
+ * Menu system callback that generates a form for the authentication and
+ * authorization settings for individual resource controllers and methods.
+ *
+ * @return array
+ *  A form array.
+ */
 function _services_oauth_admin_authentication() {
   $form = array();
 
@@ -199,6 +223,18 @@ function _services_oauth_admin_authentication() {
   return $form;
 }
 
+/**
+ * Helper function for generating authentication and authorization options for
+ * both controllers and methods.
+ *
+ * @param array $element
+ *  The form element that the options should be added to.
+ * @param array $controller
+ *  The controller or method that's being configured
+ * @param array $auth_levels
+ *  The available authorization levels
+ * @return void
+ */
 function _services_oauth_admin_authentication_options(&$element, $controller, $auth_levels) {
   $cred = $controller['#auth'] ? 'token' : ($controller['#key'] ? ($controller['#verify_key'] ? 'consumer' : 'unsigned_consumer') : 'none');
   $element['credentials'] = array(

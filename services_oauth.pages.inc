@@ -102,12 +102,11 @@ function _services_oauth_authorize() {
     return $form;
   }
   else {
+    $query = $_GET;
+    unset($query['q']); // why are there so few q's?
     drupal_goto('user/login', array(
       'destination' => url('oauth/authorize', array(
-        'query' => array(
-          'oauth_token' => $token->token_key,
-          'oauth_callback' => $callback,
-        ),
+        'query' => $query,
         'absolute' => TRUE,
       )),
     ));

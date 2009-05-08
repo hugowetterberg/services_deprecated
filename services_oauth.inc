@@ -57,6 +57,12 @@ function _services_oauth_alter_methods(&$methods) {
   $autho_levels = services_oauth_authorization_levels();
 
   foreach ($methods as $key => &$method) {
+    // Old-style methods only have a numeric index, take the method
+    // name as key instead.
+    if (is_numeric($key) && isset($method['#method'])) {
+      $key = $method['#method'];
+    }
+
     if (!isset($method[$key]['#auth'])) {
       $method['#auth'] = TRUE;
     }

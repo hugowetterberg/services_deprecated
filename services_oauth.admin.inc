@@ -132,60 +132,63 @@ function _services_oauth_admin_authentication() {
 
   $form['intro'] = array('#value' => '<p>' . t('You can change the lowest required OAuth authentication level and the authorization level for resources and methods here. This doesn\'t affect the access checks, so the security of your site <em>should</em> not be affected by changing the authentication requirements.') . '</p>');
 
-  $resources = services_get_all_resources(TRUE);
   $auth_levels = array('*' => t('Full access'));
   foreach (services_oauth_authorization_levels() as $name => $level) {
     $auth_levels[$name] = t($level->title);
   }
 
-  foreach ($resources as $name => $resource) {
-    $ra = array($name => $resource);
-    $res_set = array(
-      '#type' => 'fieldset',
-      '#title' => t('!name resource', array('!name' => $name)),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $controllers = array();
-    services_process_resources($ra, $controllers);
-    foreach ($controllers as $path => $controller) {
-      list($res, $con) = preg_split('/\//', $path, 2);
-      $c = array(
+  // Display resources
+  // This part of the module will not activate until the
+  // resource patch gets accepted into services
+  if (function_exists('services_get_all_resources')) {
+    $resources = services_get_all_resources(FALSE);
+    foreach ($resources as $name => $resource) {
+      $ra = array($name => $resource);
+      $res_set = array(
         '#type' => 'fieldset',
-        '#title' => $con,
+        '#title' => t('!name resource', array('!name' => $name)),
         '#collapsible' => TRUE,
         '#collapsed' => TRUE,
-        '#tree' => TRUE,
-        '#attributes' => array(
-          'class' => 'auth-authorization',
-        ),
       );
+      $controllers = array();
+      services_process_resources($ra, $controllers);
+      foreach ($controllers as $path => $controller) {
+        list($res, $con) = preg_split('/\//', $path, 2);
+        $c = array(
+          '#type' => 'fieldset',
+          '#title' => $con,
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+          '#tree' => TRUE,
+          '#attributes' => array(
+            'class' => 'auth-authorization',
+          ),
+        );
 
-      $cred = $controller['#auth'] ? 'token' : ($controller['#key'] ? ($controller['#verify_key'] ? 'consumer' : 'unsigned_consumer') : 'none');
-      $c['credentials'] = array(
-        '#type' => 'radios',
-        '#title' => t('Required authentication'),
-        '#description' => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
-        '#options' => array(
-          'none' => t('None'),
-          'unsigned_consumer' => t('Unsigned with consumer key'),
-          'consumer' => t('Consumer key'),
-          'token' => t('Consumer key and access token'),
-        ),
-        '#default_value' => $cred,
-      );
+        _services_oauth_admin_authentication_options($c, $controller, $auth_levels);
 
-      $c['authorization'] = array(
-        '#type' => 'radios',
-        '#title' => t('Required authorization'),
-        '#options' => $auth_levels,
-        '#default_value' => $controller['#authorization level'],
-      );
-
-      $res_set[$path] = $c;
+        $res_set[$path] = $c;
+      }
+      $form[$name] = $res_set;
     }
+  }
 
-    $form[$name] = $res_set;
+  // Display methods
+  $methods = services_get_all(FALSE);
+  foreach ($methods as $method) {
+    $path = str_replace('.', '_', $method['#method']);
+    $m = array(
+      '#type' => 'fieldset',
+      '#title' => $method['#method'],
+      '#collapsible' => TRUE,
+      '#collapsed' => TRUE,
+      '#tree' => TRUE,
+      '#attributes' => array(
+        'class' => 'auth-authorization',
+      ),
+    );
+    _services_oauth_admin_authentication_options($m, $method, $auth_levels);
+    $form[$path] = $m;
   }
 
   $form['submit'] = array(
@@ -196,17 +199,53 @@ function _services_oauth_admin_authentication() {
   return $form;
 }
 
+function _services_oauth_admin_authentication_options(&$element, $controller, $auth_levels) {
+  $cred = $controller['#auth'] ? 'token' : ($controller['#key'] ? ($controller['#verify_key'] ? 'consumer' : 'unsigned_consumer') : 'none');
+  $element['credentials'] = array(
+    '#type' => 'radios',
+    '#title' => t('Required authentication'),
+    '#description' => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
+    '#options' => array(
+      'none' => t('None'),
+      'unsigned_consumer' => t('Unsigned with consumer key'),
+      'consumer' => t('Consumer key'),
+      'token' => t('Consumer key and access token'),
+    ),
+    '#default_value' => $cred,
+  );
+
+  $element['authorization'] = array(
+    '#type' => 'radios',
+    '#title' => t('Required authorization'),
+    '#options' => $auth_levels,
+    '#default_value' => $controller['#authorization level'],
+  );
+}
+
 function _services_oauth_admin_authentication_submit($form, $form_state) {
   $values = $form_state['values'];
-  $resources = services_get_all_resources(FALSE);
-  $controllers = array();
   $authentication = array();
   $authorization = array();
-  services_process_resources($resources, $controllers);
-  foreach ($controllers as $path => $controller) {
-    $authentication[$path] = $values[$path]['credentials'];
-    $authorization[$path] = $values[$path]['authorization'];
+
+  // Process all resources
+  if (function_exists('services_get_all_resources')) {
+    $resources = services_get_all_resources(FALSE);
+    $controllers = array();
+    services_process_resources($resources, $controllers);
+    foreach ($controllers as $path => $controller) {
+      $authentication[$path] = $values[$path]['credentials'];
+      $authorization[$path] = $values[$path]['authorization'];
+    }
   }
+
+  // Process all methods
+  $methods = services_get_all(FALSE);
+  foreach ($methods as $method) {
+    $path = str_replace('.', '_', $method['#method']);
+    $authentication[$method['#method']] = $values[$path]['credentials'];
+    $authorization[$method['#method']] = $values[$path]['authorization'];
+  }
+
   variable_set('services_oauth_authentication_levels', $authentication);
   variable_set('services_oauth_authorization_settings', $authorization);
 

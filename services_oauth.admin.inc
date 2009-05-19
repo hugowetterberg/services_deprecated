@@ -164,7 +164,7 @@ function _services_oauth_admin_authentication() {
   // Display resources
   // This part of the module will not activate until the
   // resource patch gets accepted into services
-  if (function_exists('services_get_all_resources')) {
+  if (function_exists('services_get_all_resources') && function_exists('services_process_resources')) {
     $resources = services_get_all_resources(FALSE);
     foreach ($resources as $name => $resource) {
       $ra = array($name => $resource);
@@ -264,7 +264,7 @@ function _services_oauth_admin_authentication_submit($form, $form_state) {
   $authorization = array();
 
   // Process all resources
-  if (function_exists('services_get_all_resources')) {
+  if (function_exists('services_get_all_resources') && function_exists('services_process_resources')) {
     $resources = services_get_all_resources(FALSE);
     $controllers = array();
     services_process_resources($resources, $controllers);

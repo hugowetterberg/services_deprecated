@@ -1,6 +1,10 @@
 <?php
 // $Id$
 
+function _services_oauth_authorized() {
+  return t('The application has been authorized');
+}
+
 /**
  * Form for granting access to the consumer
  */
@@ -162,16 +166,21 @@ function _services_oauth_authorize_submit(&$form, &$form_state) {
 
   $got_permission = $got_permission || $values['full_access'];
 
-  // Pick the callback url apart and add the token parameter
-  $callback = parse_url($parameters['oauth_callback']);
-  $query = array();
-  parse_str($callback['query'], $query);
-  $query['oauth_token'] = $token->key;
-  $callback['query'] = http_build_query($query, 'idx_', '&');
+  if (isset($parameters['oauth_callback'])) {
+    // Pick the callback url apart and add the token parameter
+    $callback = parse_url($parameters['oauth_callback']);
+    $query = array();
+    parse_str($callback['query'], $query);
+    $query['oauth_token'] = $token->key;
+    $callback['query'] = http_build_query($query, 'idx_', '&');
 
-  // Return to the consumer site
-  header('Location: ' . _services_oauth_glue_url($callback), TRUE, 302);
-  exit;
+    // Return to the consumer site
+    header('Location: ' . _services_oauth_glue_url($callback), TRUE, 302);
+    exit;
+  }
+  else {
+    drupal_goto('oauth/authorized');
+  }
 }
 
 function _services_oauth_glue_url($parsed) {
@@ -201,6 +210,7 @@ function _services_oauth_request_token() {
     print $server->fetch_request_token($req);
   }
   catch (OAuthException $e) {
+    var_dump($e); die;
     drupal_set_header('HTTP/1.0 401 Unauthorized: ' . $e->getMessage());
     drupal_set_header(sprintf('WWW-Authenticate: OAuth realm="%s"', url('', array('absolute'=>TRUE))));
   }

@@ -37,6 +37,14 @@ function services_oauth_menu() {
     'type' => MENU_CALLBACK,
   );
 
+  $menu['oauth/authorized'] = array(
+    'title' => 'Authorization finished',
+    'page callback' => '_services_oauth_authorized',
+    'access callback' => '_services_oauth_always_true',
+    'file' => 'services_oauth.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
   $menu['oauth/request_token'] = array(
     'page callback' => '_services_oauth_request_token',
     'access callback' => '_services_oauth_always_true',

@@ -33,7 +33,7 @@ function _services_oauth_authorize() {
       header('Location: ' . drupal_substr($_SERVER['REQUEST_URI'], 1), TRUE, 302);
     }
 
-    if (!user_access('access services')) {
+    if (!user_access('services oauth authorize consumers')) {
       drupal_set_message(t('You are not authorized to allow external services access to this system.'), 'error');
       return drupal_access_denied();
     }
@@ -287,7 +287,7 @@ function _services_oauth_user_applications($form_state, $account) {
     $form['applications'] = $apps;
   }
 
-  if (user_access('access services', $account)) {
+  if (user_access('services oauth authorize consumers', $account)) {
     $auth = array(
       '#type' => 'fieldset',
       '#title' => t('Authorizations'),

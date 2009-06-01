@@ -20,7 +20,7 @@ function services_oauth_authentication_info() {
  * Implementation of hook_perm().
  */
 function services_oauth_perm() {
-  return array('services oauth register consumers');
+  return array('services oauth authorize consumers', 'services oauth register consumers');
 }
 
 /**
@@ -148,7 +148,7 @@ function services_oauth_authorization_levels() {
 }
 
 function oauth_services_user_access($user) {
-  return user_edit_access($user) && (user_access('access services', $user) || user_access('services oauth register consumers', $user));
+  return user_edit_access($user) && (user_access('services oauth authorize consumers', $user) || user_access('services oauth register consumers', $user));
 }
 
 /**

@@ -76,7 +76,7 @@ function _services_oauth_security_settings_submit() {
 function _services_oauth_alter_methods(&$methods) {
   $auth = variable_get('services_oauth_authentication_levels', array());
   $authorization = variable_get('services_oauth_authorization_settings', array());
-  $autho_levels = services_oauth_authorization_levels();
+  $autho_levels = oauth_common_authorization_levels();
 
   foreach ($methods as $key => &$method) {
     // Old-style methods only have a numeric index, take the method

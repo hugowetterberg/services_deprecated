@@ -1,0 +1,7 @@
+; $Id: node_service.info,v 1.5 2008/01/10 00:35:53 robloach Exp $
+name = Node Service
+description = Provides a node service.
+package = Services - services
+dependencies[] = services
+dependencies[] = node
+core = 6.x

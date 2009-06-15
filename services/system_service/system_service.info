@@ -1,0 +1,6 @@
+; $Id: system_service.info,v 1.5 2008/01/10 00:35:53 robloach Exp $
+name = System Service
+description = Provides system services.
+package = Services - services
+dependencies[] = services
+core = 6.x

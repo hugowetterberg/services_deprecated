@@ -1,0 +1,6 @@
+; $Id: services.info,v 1.5.2.2 2008/10/05 00:33:02 marcingy Exp $
+name = Services
+description = Provide an API for creating web services.
+package = Services
+core = 6.x
+php = 5.x 

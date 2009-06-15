@@ -153,14 +153,14 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
     $expiry_time = $timestamp + variable_get('services_key_expiry', 30);
 
     if ($expiry_time < time()) {
-      return services_error(t('Token has expired.'));
+      return services_error(t('Token has expired.'), 401);
     }
 
     // Still in time but has it been used before
     if (db_result(db_query("SELECT count(*) FROM {services_timestamp_nonce}
         WHERE domain = '%s' AND nonce = '%s'",
         $domain, $nonce))) {
-      return services_error(t('Token has been used previously for a request.'));
+      return services_error(t('Token has been used previously for a request.'), 401);
     }
     else{
       db_query("INSERT INTO {services_timestamp_nonce} (domain, timestamp, nonce)
@@ -171,12 +171,12 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
 
     //if (!services_keyauth_validate_key($api_key, $timestamp, $domain, $nonce, $method_name, $hash_parameters, $hash)) {
     if ($hash != services_get_hash($timestamp, $domain, $nonce, $method, $args)) {
-      return services_error(t('Invalid API key.'));
+      return services_error(t('Invalid API key.'), 401);
     }
     
     if (!db_result(db_query("SELECT COUNT(*) FROM {services_key_permissions} 
         WHERE kid = '%s' AND method = '%s'", $api_key, $method_name))) {
-      return services_error(t('Access denied.'));
+      return services_error(t('Access denied.'), 401);
     }
   }
 

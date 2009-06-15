@@ -78,7 +78,7 @@ function views_service_get_access($view_name) {
 function views_service_export($view_name) {
   $view = views_get_view($view_name);
   if (empty($view)) {
-    return services_error('View does not exist.');
+    return services_error('View does not exist.', 404);
   }
 
   return $view->export();
@@ -113,7 +113,7 @@ function views_service_import($view_import, $view_name = '') {
 
   // Check if there is a any error
   if ($errors = form_set_error()) {
-    return services_error($errors);
+    return services_error($errors, 406);
   }
 
   // At this point, the new view was only cached and now its time

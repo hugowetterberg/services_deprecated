@@ -39,7 +39,7 @@ function search_service_nodes($keys, $simple = FALSE, $fields = array()) {
     }
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 404);
 }
 
 /**
@@ -82,7 +82,7 @@ function search_service_content($keys, $simple = FALSE) {
     }
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 401);
 }
 
 /**
@@ -94,5 +94,5 @@ function search_service_users($keys) {
   if ($results && is_array($results) && count($results)) {
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 401);
 }

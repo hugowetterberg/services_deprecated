@@ -329,8 +329,8 @@ function services_admin_settings_submit($form, $form_state) {
   // Allow the authorization module to handle submitted values.
   services_auth_invoke('security_settings_submit', $form_state);
 
-  // Clear the services cache so that methods are updated according to auth settings
-  cache_clear_all('services:methods', 'cache');
+  // Clear the services cache so that methods and resources are updated according to auth settings
+  cache_clear_all('services:', 'cache', TRUE);
 }
 
 /**

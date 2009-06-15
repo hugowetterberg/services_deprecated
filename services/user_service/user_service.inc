@@ -15,7 +15,7 @@
 function user_service_delete($uid) {
   $account = user_load($uid);
   if (empty($account)) {
-    return services_error(t('There is no user with such ID.'));
+    return services_error(t('There is no user with such ID.'), 404);
   }
   user_delete($account, $uid);
 
@@ -44,7 +44,7 @@ function user_service_delete_access($uid) {
 function user_service_get($uid) {
   $account = user_load($uid);
   if (empty($account)) {
-    return services_error(t('There is no user with such ID.'));
+    return services_error(t('There is no user with such ID.'), 404);
   }
 
   // Everything went right.
@@ -75,7 +75,7 @@ function user_service_login($username, $password) {
 
   if ($user->uid) {
     // user is already logged in
-    return services_error(t('Already logged in as !user.', array('!user' => $user->name)));
+    return services_error(t('Already logged in as !user.', array('!user' => $user->name)), 406);
   }
 
   $user = user_authenticate(array('name' => $username, 'pass' => $password));
@@ -92,7 +92,7 @@ function user_service_login($username, $password) {
     return $return;
   }
   session_destroy();
-  return services_error(t('Wrong username or password.'));
+  return services_error(t('Wrong username or password.'), 401);
 }
 
 /**
@@ -103,7 +103,7 @@ function user_service_logout() {
 
   if (!$user->uid) {
     // User is not logged in
-    return services_error(t('User is not logged in.'));
+    return services_error(t('User is not logged in.'), 406);
   }
 
   watchdog('user', 'Session closed for %name.', array('%name' => theme('placeholder', $user->name)));
@@ -129,7 +129,7 @@ function user_service_save($account) {
   $update = user_load($account['uid']);	
   $account = isset($update->uid) ? user_save($update,$account) : user_save('', $account);  
   if (!$account) {
-    return services_error(t('Error on saving the user.'));
+    return services_error(t('Error on saving the user.'), 500);
   }
 
   // Everything went right.

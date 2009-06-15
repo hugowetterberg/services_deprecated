@@ -19,7 +19,7 @@
  */
 function node_service_get($nid, $fields = array()) {
   if (!$node = services_node_load(node_load(array('nid' => $nid)), $fields)) {
-    return services_error(t('Could not find the node.'));
+    return services_error(t('Could not find the node.'), 401);
   }
 
   return $node;
@@ -59,7 +59,7 @@ function node_service_view($nid, $fields = array(), $teaser = FALSE, $page = FAL
   $node = services_node_load(node_build_content(node_load($nid), $teaser, $page), $fields);
   
   if (!$node) {
-    return services_error(t("Could not find the node."));
+    return services_error(t("Could not find the node."), 404);
   }
   
   return $node;
@@ -118,7 +118,7 @@ function node_service_save($edit) {
       $nid = $node->nid;
     }
     else {
-      return services_error(t('Node not found'));
+      return services_error(t('Node not found'), 401);
     }
   }
   else {
@@ -133,7 +133,7 @@ function node_service_save($edit) {
     $nid = $form_state['nid'];
   }
   if ($errors = form_get_errors()) {
-    return services_error(implode("\n", $errors));
+    return services_error(implode("\n", $errors), 401);
   }
   return $nid;
 }

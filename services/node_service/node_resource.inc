@@ -73,16 +73,26 @@ function _node_resource_delete($nid) {
 }
 
 function _node_resource_index($page=0, $fields=array(), $parameters=array()) {
-  $builder = new QueryBuilder();
+  if (module_exists('query_builder')) {
+    $builder = new QueryBuilder();
+    $parameters = (array)$parameters;
 
-  if (is_string($fields)) {
-    $fields = preg_split('/,\s?/', $fields);
-  }
+    if (isset($parameters['__describe'])) {
+      return $builder->describe();
+    }
 
-  if (!user_access('administer nodes') || !isset($parameters['status'])) {
-    $parameters['status'] = 1;
+    if (is_string($fields) && !empty($fields)) {
+      $fields = preg_split('/,\s?/', $fields);
+    }
+
+    if (!user_access('administer nodes') || !isset($parameters['status'])) {
+      $parameters['status'] = 1;
+    }
+    list($sql, $params) = $builder->query($fields, $parameters);
   }
-  list($sql, $params) = $builder->query($fields, $parameters);
+  else {
+    $sql = "SELECT * FROM {node} WHERE status=1 ORDER BY sticky DESC, created DESC";
+  }
   $res = db_query_range($sql, $params, $page*20, 20);
 
   $events = array();

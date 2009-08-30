@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.module,v 1.1.2.6.2.1 2009/06/10 17:23:43 marcingy Exp $
+// $Id: services_keyauth.module,v 1.1.2.6.2.2 2009/06/28 22:33:08 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -22,7 +22,7 @@ function services_keyauth_cron() {
  * 
  */
 function services_keyauth_access() {
-  return user_access('administer services') && variable_get('services_use_key', FALSE);
+  return user_access('administer services') && variable_get('services_use_key', TRUE);
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.inc,v 1.1.2.8.2.1 2009/06/13 20:09:14 marcingy Exp $
+// $Id: services_keyauth.inc,v 1.1.2.8.2.2 2009/08/08 03:09:50 marcingy Exp $
 
 /**
  * @file
@@ -160,7 +160,7 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
     if (db_result(db_query("SELECT count(*) FROM {services_timestamp_nonce}
         WHERE domain = '%s' AND nonce = '%s'",
         $domain, $nonce))) {
-      return services_error(t('Token has been used previously for a request.'), 401);
+      return services_error(t('Token has been used previously for a request. Re-try with another nonce key.', 401));
     }
     else{
       db_query("INSERT INTO {services_timestamp_nonce} (domain, timestamp, nonce)

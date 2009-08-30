@@ -1,5 +1,5 @@
 <?php
-// $Id: services.module,v 1.8.2.88.2.1 2009/06/13 21:45:59 marcingy Exp $
+// $Id: services.module,v 1.8.2.88.2.5 2009/08/08 14:35:05 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -75,6 +75,7 @@ function services_menu() {
     'access arguments'  => array('administer services'),
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
+    'file'              => 'services_admin_browse.inc',
   );
   $items['admin/services/ahah/security-options'] = array(
     'file'              => 'services_admin_browse.inc',
@@ -638,6 +639,7 @@ function services_session_load($sessid) {
   if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $sessid;
 
   // Load session data
+  session_id($sessid);
   sess_read($sessid);
 
   // Check if it really loaded user and, for additional security, if user was logged from the same IP. If not, then revert automatically.
@@ -665,7 +667,7 @@ function services_session_unload($backup) {
 
   // Some client/servers, like XMLRPC, do not handle cookies, so imitate it to make sess_read() function try to look for user,
   // instead of just loading anonymous user :).
-  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $sessid;
+  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $backup->sessid;
 
   // Save current session data
   sess_write($user->sid, session_encode());
@@ -675,6 +677,7 @@ function services_session_unload($backup) {
 
   // Revert to previous user and session data
   $user = $backup;
+  session_id($backup->sessid);
   session_decode($user->session);
 
   session_save_session(TRUE);

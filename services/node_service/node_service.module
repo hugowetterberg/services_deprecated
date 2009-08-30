@@ -1,5 +1,5 @@
 <?php
-// $Id: node_service.module,v 1.5.2.21 2009/05/18 20:55:21 marcingy Exp $
+// $Id: node_service.module,v 1.5.2.21.2.1 2009/08/08 03:07:14 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -67,7 +67,7 @@ function node_service_service() {
           '#name'         => 'fields',
           '#type'         => 'array',
           '#optional'     => TRUE, 
-          '#description'  => t('A list of fields to return.'))),
+          '#description'  => t('A list of fields to return.')),
         array(
           '#name'         => 'teaser',
           '#type'         => 'boolean',
@@ -77,7 +77,7 @@ function node_service_service() {
           '#name'         => 'page',
           '#type'         => 'boolean',
           '#optional'     => TRUE, 
-          '#description'  => t('Is this a page version of the node?')),
+          '#description'  => t('Is this a page version of the node?'))),
       '#return'           => 'struct',
       '#help'             => t('Returns a node data.')),
     

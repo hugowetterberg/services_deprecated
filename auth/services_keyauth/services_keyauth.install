@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.install,v 1.1.2.4.2.1 2009/06/10 17:23:43 marcingy Exp $
+// $Id: services_keyauth.install,v 1.1.2.4.2.2 2009/06/20 19:48:42 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -93,26 +93,7 @@ function services_keyauth_schema() {
   return $schema;
 }
 
-/**
- * Implementation of hook_install().
- */
-function services_keyauth_install() {
-  if (!db_table_exists('services_keys')) {
-    drupal_install_schema('services_keyauth');
-  }
-}
-
-/**
- * Implementation of hook_uninstall().
- */
-function services_keyauth_uninstall() {
-  drupal_uninstall_schema('services_keyauth');
-
-  variable_del('services_use_key');
-  variable_del('services_use_sessid');
-}
-
-function services_keyauth_update_6001() {
+function _services_key_auth_permissions (&$update) {
   $schema['services_key_permissions'] = array(
     'description' => t('Stores services method\'s access rights on a per API key basis.'),
     'fields' => array(
@@ -136,9 +117,39 @@ function services_keyauth_update_6001() {
       'method'        => array('method'),
     ),
     'unique key' => array('key_method' => array('kid','method')),
-  );    
-  $update = array();
+  );
   db_create_table($update, 'services_key_permissions', $schema['services_key_permissions']);
+
+  return $update;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function services_keyauth_install() {
+  // Legacy tables exist so we just create the new table.
+  if (!db_table_exists('services_keys')) {
+    drupal_install_schema('services_keyauth');
+  }
+  else{
+    $update = array();
+    _services_key_auth_permissions($update);
+  }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function services_keyauth_uninstall() {
+  drupal_uninstall_schema('services_keyauth');
+
+  variable_del('services_use_key');
+  variable_del('services_use_sessid');
+}
+
+function services_keyauth_update_6001() {
+  $update = array();
+  _services_key_auth_permissions($update);
   return $update;
 }
 
@@ -162,5 +173,15 @@ function services_keyauth_update_6003() {
  */
 function services_keyauth_update_6004() {
   $update = array();
+  return $update;
+}
+
+function services_keyauth_update_6005() {
+  $update = array();
+  
+  // A table might fail to exist in certain circumstances due to an issue with the install.
+  if (!db_table_exists('services_key_permissions')) {
+    _services_key_auth_permissions($update);
+  }
   return $update;
 }

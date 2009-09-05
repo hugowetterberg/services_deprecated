@@ -8,15 +8,20 @@
  * @return array
  *  A form array.
  */
-function _services_oauth_admin_authentication() {
-  $form = array();
+function _services_oauth_admin_authentication($form_state, $context='') {
+  $form = array(
+    'context' => array(
+      '#type' => 'value',
+      '#value' => $context,
+    ),
+  );
 
   drupal_add_css(drupal_get_path('module', 'services_oauth') . '/services_oauth.css');
 
   $form['intro'] = array('#value' => '<p>' . t('You can change the lowest required OAuth authentication level and the authorization level for resources and methods here. This doesn\'t affect the access checks, so the security of your site <em>should</em> not be affected by changing the authentication requirements.') . '</p>');
 
   $auth_levels = array('*' => t('Full access'));
-  foreach (oauth_common_authorization_levels() as $name => $level) {
+  foreach (oauth_common_authorization_levels($context) as $name => $level) {
     $auth_levels[$name] = t($level->title);
   }
 
@@ -24,7 +29,7 @@ function _services_oauth_admin_authentication() {
   // This part of the module will not activate until the
   // resource patch gets accepted into services
   if (function_exists('services_get_all_resources') && function_exists('services_process_resources')) {
-    $resources = services_get_all_resources(FALSE);
+    $resources = services_get_all_resources(FALSE, $context);
     foreach ($resources as $name => $resource) {
       $ra = array($name => $resource);
       $res_set = array(
@@ -57,7 +62,7 @@ function _services_oauth_admin_authentication() {
   }
 
   // Display methods
-  $methods = services_get_all(FALSE);
+  $methods = services_get_all(FALSE, $context);
   foreach ($methods as $method) {
     $path = str_replace('.', '_', $method['#method']);
     $m = array(
@@ -124,9 +129,9 @@ function _services_oauth_admin_authentication_submit($form, $form_state) {
 
   // Process all resources
   if (function_exists('services_get_all_resources') && function_exists('services_process_resources')) {
-    $resources = services_get_all_resources(FALSE);
+    $resources = services_get_all_resources(FALSE, $values['context']);
     $controllers = array();
-    services_process_resources($resources, $controllers);
+    services_process_resources($resources, $controllers, $values['context']);
     foreach ($controllers as $path => $controller) {
       $authentication[$path] = $values[$path]['credentials'];
       $authorization[$path] = $values[$path]['authorization'];
@@ -134,15 +139,15 @@ function _services_oauth_admin_authentication_submit($form, $form_state) {
   }
 
   // Process all methods
-  $methods = services_get_all(FALSE);
+  $methods = services_get_all(FALSE, $values['context']);
   foreach ($methods as $method) {
     $path = str_replace('.', '_', $method['#method']);
     $authentication[$method['#method']] = $values[$path]['credentials'];
     $authorization[$method['#method']] = $values[$path]['authorization'];
   }
 
-  variable_set('services_oauth_authentication_levels', $authentication);
-  variable_set('services_oauth_authorization_settings', $authorization);
+  variable_set('services_oauth_authentication_levels_' . $values['context'], $authentication);
+  variable_set('services_oauth_authorization_settings_' . $values['context'], $authorization);
 
   // Clear the services cache so that methods are updated
   cache_clear_all('services:', 'cache', TRUE);

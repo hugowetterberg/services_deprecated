@@ -9,6 +9,7 @@ function services_oauth_authentication_info() {
     '#file' => 'services_oauth.inc',
     '#title' => t('OAuth authentication'),
     '#description' => t('An open protocol to allow secure API authorization'),
+    '#context_aware' => TRUE,
     'security_settings' => '_services_oauth_security_settings',
     'security_settings_submit' => '_services_oauth_security_settings_submit',
     'alter_methods' => '_services_oauth_alter_methods',
@@ -22,10 +23,10 @@ function services_oauth_authentication_info() {
 function services_oauth_menu() {
   $menu = array();
 
-  $menu['admin/build/services/authentication'] = array(
+  $menu['admin/build/services/%/authentication'] = array(
     'title' => 'Authentication',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('_services_oauth_admin_authentication'),
+    'page arguments' => array('_services_oauth_admin_authentication', 3),
     'access arguments' => array('administer services'),
     'file' => 'services_oauth.admin.inc',
     'type' => MENU_LOCAL_TASK,

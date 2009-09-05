@@ -113,14 +113,17 @@ function services_theme() {
 /**
  * Callback for server endpoint
  */
-function services_server($server_path = NULL) {
+function services_server($server_path, $endpoint_path=NULL, $context=NULL) {
   // Find which module the server is part of
   foreach (module_implements('server_info') as $module) {
     $info = module_invoke($module, 'server_info');
     if ($info['#path'] == $server_path) {
+      if (empty($endpoint_path)) {
+        $endpoint_path = 'services/' . $server_path;
+      }
 
       // call the server
-      services_set_server_info($module);
+      services_set_server_info($module, $endpoint_path, $context);
       print module_invoke($module, 'server');
 
       // Do not let this output
@@ -385,18 +388,24 @@ function services_resource_uri($path) {
 /**
  * Gets all resource definitions.
  *
+ * @param bool $include_resources
+ *   Optional. When TRUE resource-based service definitions will be translated to
+ *   the appropriat method callas and included in the service listing.
+ *   Defaults to TRUE.
+ * @param string $context
+ *   Optional. The endpoint context that's being used. Defaults to ''.
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($include_services = TRUE) {
-  $cache_key = 'services:resources' . ($include_services?'_with_services':'');
+function services_get_all_resources($include_services = TRUE, $context = '') {
+  $cache_key = 'services:' . $context . ':resources' . ($include_services?'_with_services':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
-    $resources = module_invoke_all('service_resource');
-    drupal_alter('service_resources', $resources);
+    $resources = module_invoke_all('service_resource', $context);
+    drupal_alter('service_resources', $resources, $context);
 
     $controllers = array();
     services_process_resources($resources, $controllers);
@@ -415,11 +424,11 @@ function services_get_all_resources($include_services = TRUE) {
       }
     }
 
-    drupal_alter('service_resources_post_processing', $resources);
-    services_auth_invoke('alter_methods', $controllers);
+    drupal_alter('service_resources_post_processing', $resources, $context);
+    services_auth_invoke('alter_methods', $controllers, $context);
 
     if ($include_services) {
-      $services = services_get_all(FALSE);
+      $services = services_get_all(FALSE, $context);
 
       // Include the file that has the necessary functions for translating
       // methods to resources.
@@ -507,17 +516,19 @@ function services_delegate_access($perm) {
  *   Optional. When TRUE resource-based service definitions will be translated to
  *   the appropriat method callas and included in the service listing.
  *   Defaults to TRUE.
+ * @param string $context
+ *   The endpoint context that's being used.
  * @return array
  *   An array containing all services and thir methods
  */
-function services_get_all($include_resources = TRUE) {
-  $cache_key = 'services:methods' . ($include_resources?'_with_resources':'');
+function services_get_all($include_resources = TRUE, $context='') {
+  $cache_key = 'services:' . $context . ':methods' . ($include_resources?'_with_resources':'');
 
   if (($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
-    $methods = module_invoke_all('service');
+    $methods = module_invoke_all('service', $context);
 
     foreach ($methods as $key => $method) {
 
@@ -549,11 +560,11 @@ function services_get_all($include_resources = TRUE) {
     }
 
     // Allow auth module to alter the methods
-    services_auth_invoke('alter_methods', $methods);
+    services_auth_invoke('alter_methods', $methods, $context);
 
     // Add resources if wanted
     if ($include_resources) {
-      $resources = services_get_all_resources(FALSE);
+      $resources = services_get_all_resources(FALSE, $context);
 
       // Include the file that has the necessary functions for translating
       // resources to method calls.
@@ -582,17 +593,17 @@ function services_method_load($method) {
   return isset($method) ? $method : FALSE;
 }
 
-function services_method_get($method_name) {
+function services_method_get($method_name, $context='') {
   static $method_cache;
-  if (!isset($method_cache[$method_name])) {
-    foreach (services_get_all() as $method) {
+  if (!isset($method_cache[$context]) || !isset($method_cache[$context][$method_name])) {
+    foreach (services_get_all(TRUE, $context) as $method) {
       if ($method_name == $method['#method']) {
-        $method_cache[$method_name] = $method;
+        $method_cache[$context][$method_name] = $method;
         break;
       }
     }
   }
-  return $method_cache[$method_name];
+  return $method_cache[$context][$method_name];
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: node_resource.models.inc,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
 
 class NodeResourceFeedModel implements ResourceTimeFeedModel {
   protected $nodes = NULL;
@@ -10,7 +10,7 @@ class NodeResourceFeedModel implements ResourceTimeFeedModel {
 
   public function current() {
     $node = current($this->nodes);
-    if ($node!==FALSE) {
+    if ($node !== FALSE) {
       return new NodeResourceFeedModelItem($node);
     }
     return FALSE;
@@ -31,7 +31,7 @@ class NodeResourceFeedModel implements ResourceTimeFeedModel {
   public function valid() {
     // It's safe to use current as there never should be a boolean
     // in the node array.
-    return current($this->nodes)!==FALSE;
+    return current($this->nodes) !== FALSE;
   }
 }
 

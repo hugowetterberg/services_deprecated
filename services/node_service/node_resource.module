@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: node_resource.module,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
 
 function node_resource_autoload_info() {
   return array(
@@ -30,7 +30,7 @@ function node_resource_service_resource() {
         '#models' => array(
           'ResourceFeedModel' => array(
             'class' => 'NodeResourceFeedModel',
-            'arguments' => array('source'=>'single'),
+            'arguments' => array('source' => 'single'),
           ),
         ),
         '#access callback' => '_node_resource_access',
@@ -123,8 +123,8 @@ function node_resource_service_resource() {
   );
 }
 
-function _node_resource_access($op='view', $args=array()) {
-  if ($op!='create' && !empty($args)) {
+function _node_resource_access($op = 'view', $args = array()) {
+  if ($op != 'create' && !empty($args)) {
     $node = node_load($args[0]);
   }
   return node_access($op, $node);

@@ -1,5 +1,5 @@
 <?php
-// $Id: services.module,v 1.8.2.88.2.5 2009/08/08 14:35:05 marcingy Exp $
+// $Id: services.module,v 1.8.2.88.2.6 2009/09/05 13:57:58 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -183,7 +183,7 @@ function services_get_server_info($server_info = NULL) {
 /**
  * Prepare an error message for returning to the server.
  */
-function services_error($message, $code=0, $exception=NULL) {
+function services_error($message, $code = 0, $exception = NULL) {
   $server_info = services_get_server_info();
 
   // Look for custom error handling function.
@@ -355,10 +355,10 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
  * @return mixed
  *  Returns the registered callback for resource uri formatting
  */
-function services_resource_uri_formatter($callback=NULL) {
+function services_resource_uri_formatter($callback = NULL) {
   static $formatter;
 
-  if ($callback!==NULL) {
+  if ($callback !== NULL) {
     $formatter = $callback;
   }
 
@@ -388,7 +388,7 @@ function services_resource_uri($path) {
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($include_services=TRUE) {
+function services_get_all_resources($include_services = TRUE) {
   $cache_key = 'services:resources' . ($include_services?'_with_services':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {

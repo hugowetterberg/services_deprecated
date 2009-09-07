@@ -1,13 +1,13 @@
 <?php
-// $Id$
+// $Id: services.resource-translation.inc,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
 
 function _services_resource_as_services($resource) {
   static $controllers = array(
-    '#create'=>'create',
-    '#delete'=>'delete',
-    '#retrieve'=>'retrieve',
-    '#update'=>'update',
-    '#index'=>'index',
+    '#create' => 'create',
+    '#delete' => 'delete',
+    '#retrieve' => 'retrieve',
+    '#update' => 'update',
+    '#index' => 'index',
   ), $subcontrollers = array(
     '#relationships' => 'related',
     '#targeted actions' => 'targeted_action',

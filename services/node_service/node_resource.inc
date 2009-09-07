@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: node_resource.inc,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
 
 function _node_resource_retrieve($nid) {
   $node = node_load($nid);
@@ -72,7 +72,7 @@ function _node_resource_delete($nid) {
   return TRUE;
 }
 
-function _node_resource_index($page=0, $fields=array(), $parameters=array()) {
+function _node_resource_index($page = 0, $fields = array(), $parameters = array()) {
   if (module_exists('query_builder')) {
     $builder = new QueryBuilder();
     $parameters = (array)$parameters;

@@ -1,5 +1,5 @@
 <?php
-// $Id: node_service.inc,v 1.1.2.11 2009/06/06 22:17:19 marcingy Exp $
+// $Id: node_service.inc,v 1.1.2.11.2.1 2009/09/05 13:57:58 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file

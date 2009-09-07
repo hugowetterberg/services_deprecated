@@ -1,5 +1,5 @@
 <?php
-// $Id: services.module,v 1.8.2.88.2.5 2009/08/08 14:35:05 marcingy Exp $
+// $Id: services.module,v 1.8.2.88.2.6 2009/09/05 13:57:58 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -128,7 +128,7 @@ function services_server($server_path = NULL) {
       exit;
     }
   }
-  // return 404 if the service doesn't exist
+  // return 404 if the server doesn't exist
   drupal_not_found();
 }
 
@@ -181,15 +181,15 @@ function services_get_server_info($server_info = NULL) {
 }
 
 /**
- * Prepare an error message for returning to the XMLRPC caller.
+ * Prepare an error message for returning to the server.
  */
-function services_error($message) {
+function services_error($message, $code = 0, $exception = NULL) {
   $server_info = services_get_server_info();
 
   // Look for custom error handling function.
   // Should be defined in each server module.
   if ($server_info && module_hook($server_info->module, 'server_error')) {
-    return module_invoke($server_info->module, 'server_error', $message);
+    return module_invoke($server_info->module, 'server_error', $message, $code, $exception);
   }
 
   // No custom error handling function found.
@@ -276,11 +276,16 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
  * This is the magic function through which all remote method calls must pass.
  */
 function services_method_call($method_name, $args = array(), $browsing = FALSE) {
-  $method = services_method_get($method_name);
+  if (is_array($method_name) && isset($method_name['#callback'])) {
+    $method = $method_name;
+  }
+  else {
+    $method = services_method_get($method_name);
+  }
 
   // Check that method exists.
   if (empty($method)) {
-    return services_error(t('Method %name does not exist.', array('%name' => $method_name)));
+    return services_error(t('Method %name does not exist', array('%name' => $method_name)), 406);
   }
 
   // Check for missing args
@@ -288,7 +293,7 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   foreach ($method['#args'] as $key => $arg) {
     if (!$arg['#optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {
-        return services_error(t('Missing required arguments.'));
+        return services_error(t('Missing required arguments.'), 406);
       }
     }
   }
@@ -298,7 +303,9 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
     if ($browsing) {
       drupal_set_message(t('Authentication failed: !message', array('!message' => $auth_error)), 'error');
     }
-    return services_error($auth_error);
+    else {
+      return services_error($auth_error, 401);
+    }
   }
 
   // Load the proper file
@@ -309,6 +316,9 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   // Construct access arguments array
   if (isset($method['#access arguments'])) {
     $access_arguments = $method['#access arguments'];
+    if (isset($method['#access arguments append']) && $method['#access arguments append']) {
+      $access_arguments[] = $args;
+    }
   }
   else {
     // Just use the arguments array if no access arguments have been specified
@@ -317,7 +327,7 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
 
   // Call default or custom access callback
   if (call_user_func_array($method['#access callback'], $access_arguments) != TRUE) {
-    return services_error(t('Access denied.'));
+    return services_error(t('Access denied'), 401);
   }
 
   // Change working directory to drupal root to call drupal function,
@@ -335,15 +345,155 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   return $result;
 }
 
-function services_get_all_resources() {
-  static $resource_cache;
-  if (!isset($resource_cache)) {
-    $resource_cache = module_invoke_all('service_resource');
-    foreach ($resource_cache as $name => &$res) {
-      $res['#name'] = $name;
+/**
+ * Registers a callback for formatting resource uri's.
+ * Use parameterless call to get the current formatter callback.
+ *
+ * @param mixed $callback
+ *  Optional. The callaback to register for uri formatting. No changes are made
+ *  if this parameter is omitted or NULL.
+ * @return mixed
+ *  Returns the registered callback for resource uri formatting
+ */
+function services_resource_uri_formatter($callback = NULL) {
+  static $formatter;
+
+  if ($callback !== NULL) {
+    $formatter = $callback;
+  }
+
+  return $formatter;
+}
+
+/**
+ * Formats a resource uri using the formatter registered through
+ * services_resource_uri_formatter().
+ *
+ * @param array $path
+ *  An array of strings containing the component parts of the path to the resource.
+ * @return string
+ *  Returns the formatted resource uri, or NULL if no formatter has been registered.
+ */
+function services_resource_uri($path) {
+  $formatter = services_resource_uri_formatter();
+  if ($formatter) {
+    return call_user_func($formatter, $path);
+  }
+  return NULL;
+}
+
+/**
+ * Gets all resource definitions.
+ *
+ * @return array
+ *  An array containing all resources.
+ */
+function services_get_all_resources($include_services = TRUE) {
+  $cache_key = 'services:resources' . ($include_services?'_with_services':'');
+
+  if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
+    return $cache->data;
+  }
+  else {
+    $resources = module_invoke_all('service_resource');
+    drupal_alter('service_resources', $resources);
+
+    $controllers = array();
+    services_process_resources($resources, $controllers);
+
+    foreach ($controllers as &$controller) {
+      if (!isset($controller['#access callback'])) {
+        $controller['#access callback'] = 'services_access_menu';
+      }
+
+      if (!isset($controller['#auth'])) {
+        $controller['#auth'] = TRUE;
+      }
+
+      if (!isset($controller['#key'])) {
+        $controller['#key'] = TRUE;
+      }
+    }
+
+    drupal_alter('service_resources_post_processing', $resources);
+    services_auth_invoke('alter_methods', $controllers);
+
+    if ($include_services) {
+      $services = services_get_all(FALSE);
+
+      // Include the file that has the necessary functions for translating
+      // methods to resources.
+      if (!empty($services)) {
+        module_load_include('inc', 'services', 'services.resource-translation');
+        $resources = array_merge(_services_services_as_resources($services), $resources);
+      }
+    }
+
+    cache_set($cache_key, $resources);
+    return $resources;
+  }
+}
+
+function services_process_resources(&$resources, &$controllers, $path=array()) {
+  foreach ($resources as $name => &$resource) {
+    if (drupal_substr($name, 0, 1) != '#') {
+      _services_process_resource(array_merge($path, array($name)), $resource, $controllers);
     }
   }
-  return $resource_cache;
+}
+
+function _services_process_resource($name, &$resource, &$controllers) {
+  $path = join($name, '/');
+  $resource['#name'] = $path;
+
+  $keys = array('#retrieve','#create','#update','#delete');
+  foreach ($keys as $key) {
+    if (isset($resource[$key])) {
+      $controllers[$path . '/' . $key] = &$resource[$key];
+    }
+  }
+
+  if (isset($resource['#index'])) {
+    $controllers[$path . '/#index'] = &$resource['#index'];
+  }
+
+  if (isset($resource['#relationships'])) {
+    foreach ($resource['#relationships'] as $relname => $rel) {
+      // Run some inheritance logic
+      if (isset($resource['#retrieve'])) {
+        if (empty($rel['#args']) || $rel['#args'][0]['#name'] !== $resource['#retrieve']['#args'][0]['#name']) {
+          array_unshift($rel['#args'], $resource['#retrieve']['#args'][0]);
+        }
+        $resource['#relationships'][$relname] = array_merge($resource['#retrieve'], $rel);
+      }
+      $controllers[$path . '/relationship/' . $relname] = &$resource['#relationships'][$relname];
+    }
+  }
+
+  if (isset($resource['#actions'])) {
+    foreach ($resource['#actions'] as $actname => $act) {
+      // Run some inheritance logic
+      if (isset($resource['#update'])) {
+        $up = $resource['#update'];
+        unset($up['#args']);
+        $resource['#actions'][$actname] = array_merge($up, $act);
+      }
+      $controllers[$path . '/action/' . $actname] = &$resource['#actions'][$actname];
+    }
+  }
+
+  if (isset($resource['#targeted actions'])) {
+    foreach ($resource['#targeted actions'] as $actname => $act) {
+      // Run some inheritance logic
+      if (isset($resource['#update'])) {
+        if (empty($act['#args']) || $act['#args'][0]['#name'] !== $resource['#update']['#args'][0]['#name']) {
+          array_unshift($act['#args'], $resource['#update']['#args'][0]);
+        }
+        $resource['#targeted actions'][$actname] = array_merge($resource['#update'], $act);
+      }
+      $controllers[$path . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
+    }
+  }
 }
 
 function services_delegate_access($perm) {
@@ -353,11 +503,15 @@ function services_delegate_access($perm) {
 /**
  * Gets all service definitions
  *
+ * @param bool $include_resources
+ *   Optional. When TRUE resource-based service definitions will be translated to
+ *   the appropriat method callas and included in the service listing.
+ *   Defaults to TRUE.
  * @return array
  *   An array containing all services and thir methods
  */
 function services_get_all($include_resources = TRUE) {
-  $cache_key = 'services:methods';
+  $cache_key = 'services:methods' . ($include_resources?'_with_resources':'');
 
   if (($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
@@ -396,6 +550,24 @@ function services_get_all($include_resources = TRUE) {
 
     // Allow auth module to alter the methods
     services_auth_invoke('alter_methods', $methods);
+
+    // Add resources if wanted
+    if ($include_resources) {
+      $resources = services_get_all_resources(FALSE);
+
+      // Include the file that has the necessary functions for translating
+      // resources to method calls.
+      if (!empty($resources)) {
+        module_load_include('inc', 'services', 'services.resource-translation');
+
+        // Translate all resources
+        foreach ($resources as $name => $def) {
+          foreach(_services_resource_as_services($def) as $method) {
+            $methods[] = $method;
+          }
+        }
+      }
+    }
 
     cache_set($cache_key, $methods);
     return $methods;

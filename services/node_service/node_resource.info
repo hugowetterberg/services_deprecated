@@ -1,0 +1,6 @@
+; $Id: node_resource.info,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
+name = Node Resource
+description = Provides a resource oriented service interface to nodes.
+package = Services - services
+core = 6.x
+php = 5.x

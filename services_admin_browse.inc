@@ -1,5 +1,5 @@
 <?php
-// $Id: services_admin_browse.inc,v 1.5.2.45.2.1 2009/06/13 20:00:14 marcingy Exp $
+// $Id: services_admin_browse.inc,v 1.5.2.45.2.2 2009/09/05 13:57:58 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -329,8 +329,8 @@ function services_admin_settings_submit($form, $form_state) {
   // Allow the authorization module to handle submitted values.
   services_auth_invoke('security_settings_submit', $form_state);
 
-  // Clear the services cache so that methods are updated according to auth settings
-  cache_clear_all('services:methods', 'cache');
+  // Clear the services cache so that methods and resources are updated according to auth settings
+  cache_clear_all('services:', 'cache', TRUE);
 }
 
 /**

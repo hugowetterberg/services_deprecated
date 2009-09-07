@@ -1,5 +1,5 @@
 <?php
-// $Id: search_service.inc,v 1.1.2.8 2009/05/19 02:28:41 marcingy Exp $
+// $Id: search_service.inc,v 1.1.2.8.2.1 2009/09/05 13:57:58 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -39,7 +39,7 @@ function search_service_nodes($keys, $simple = FALSE, $fields = array()) {
     }
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 404);
 }
 
 /**
@@ -82,7 +82,7 @@ function search_service_content($keys, $simple = FALSE) {
     }
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 401);
 }
 
 /**
@@ -94,5 +94,5 @@ function search_service_users($keys) {
   if ($results && is_array($results) && count($results)) {
     return $results;
   }
-  return services_error(t('Search returned no results.'));
+  return services_error(t('Search returned no results.'), 401);
 }

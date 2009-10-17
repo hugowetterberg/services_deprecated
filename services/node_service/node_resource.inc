@@ -73,6 +73,8 @@ function _node_resource_delete($nid) {
 }
 
 function _node_resource_index($page = 0, $fields = array(), $parameters = array()) {
+  $params = array();
+
   if (module_exists('query_builder')) {
     $builder = new QueryBuilder();
     $parameters = (array)$parameters;

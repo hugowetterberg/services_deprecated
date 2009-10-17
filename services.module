@@ -445,14 +445,11 @@ function services_get_all_resources($include_services = TRUE, $context = '') {
 
 function services_process_resources(&$resources, &$controllers, $path=array()) {
   foreach ($resources as $name => &$resource) {
-    if (drupal_substr($name, 0, 1) != '#') {
-      _services_process_resource(array_merge($path, array($name)), $resource, $controllers);
-    }
+    _services_process_resource($name, $resource, $controllers);
   }
 }
 
-function _services_process_resource($name, &$resource, &$controllers) {
-  $path = join($name, '/');
+function _services_process_resource($path, &$resource, &$controllers) {
   $resource['#name'] = $path;
 
   $keys = array('#retrieve','#create','#update','#delete');

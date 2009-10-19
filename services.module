@@ -39,43 +39,25 @@ function services_menu() {
     'title'             => 'Services',
     'description'       => 'Allows external applications to communicate with Drupal.',
     'access arguments'  => array('administer services'),
-    'page callback'     => 'services_admin_browse_index',
-    'file'              => 'services_admin_browse.inc',
+    'page callback'     => 'services_admin_context_index',
+    'file'              => 'includes/admin_context.inc',
   );
-  $items['admin/build/services/browse'] = array(
-    'title'             => 'Browse',
-    'description'       => 'Browse and test available remote services.',
+  $items['admin/build/services/contexts'] = array(
+    'title'             => 'Context',
+    'description'       => 'Administer the different services contexts.',
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
   );
-  $items['admin/build/services/browse/%services_method'] = array(
-    'title'             => 'Services',
-    'description'       => 'Calls a Services method.',
-    'page callback'     => 'services_admin_browse_method',
-    'page arguments'    => array(4),
-    'access arguments'  => array('administer services'),
-    'type'              => MENU_LOCAL_TASK,
-    'file'              => 'services_admin_browse.inc',
-  );
-
-  $items['admin/build/services/settings'] = array(
-    'title'             => 'Settings',
-    'description'       => 'Configure service settings.',
+  $items['admin/build/services/contexts/%'] = array(
+    'title callback'    => '_services_edit_context_title',
+    'title arguments'   => array('Edit !title', 4),
+    'description'       => 'Edit a context.',
     'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_settings'),
+    'page arguments'    => array('services_admin_context_edit', 4),
     'access arguments'  => array('administer services'),
-    'type'              => MENU_LOCAL_TASK,
-    'file'              => 'services_admin_browse.inc',
-  );
-  $items['admin/build/services/settings/general'] = array(
-    'title'             => 'General',
-    'description'       => 'Configure service settings.',
-    'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_settings'),
-    'access arguments'  => array('administer services'),
-    'type'              => MENU_DEFAULT_LOCAL_TASK,
+    'file'              => 'includes/admin_context.inc',
+    'type'              => MENU_CALLBACK,
     'weight'            => -10,
-    'file'              => 'services_admin_browse.inc',
   );
   $items['admin/services/ahah/security-options'] = array(
     'file'              => 'services_admin_browse.inc',
@@ -88,15 +70,26 @@ function services_menu() {
     'page callback'     => 'services_crossdomain_xml',
     'type'              => MENU_CALLBACK,
   );
-  $items['services/%'] = array(
-    'title'             => 'Services',
-    'access callback'   => 'services_access_menu',
-    'page callback'     => 'services_server',
-    'page arguments'    => array(1),
-    'type'              => MENU_CALLBACK,
-  );
+
+  $contexts = services_get_contexts();
+  foreach ($contexts as $name => $context) {
+    $items[$context['path']] = array(
+      'title'             => 'Services endpoint',
+      'access callback'   => 'services_access_menu',
+      'page callback'     => 'services_server',
+      'page arguments'    => array($context['server'], $context['path'], $name),
+      'type'              => MENU_CALLBACK,
+    );
+  }
 
   return $items;
+}
+
+function _services_edit_context_title($title, $context) {
+  $context = services_get_context($context);
+  return t($title, array(
+    '!title' => $context['title'],
+  ));
 }
 
 /**
@@ -107,23 +100,23 @@ function services_theme() {
     'services_admin_browse_test' => array(
       'arguments' => array('form' => NULL),
     ),
+    'services_context_index' => array(
+      'template' => 'services_context_index',
+      'arguments' => array('contexts' => NULL),
+    ),
   );
 }
 
 /**
  * Callback for server endpoint
  */
-function services_server($server_path, $endpoint_path=NULL, $context=NULL) {
+function services_server($server, $endpoint, $context) {
   // Find which module the server is part of
   foreach (module_implements('server_info') as $module) {
     $info = module_invoke($module, 'server_info');
-    if ($info['#path'] == $server_path) {
-      if (empty($endpoint_path)) {
-        $endpoint_path = 'services/' . $server_path;
-      }
-
+    if ($info['#path'] == $server) {
       // call the server
-      services_set_server_info($module, $endpoint_path, $context);
+      services_set_server_info($module, $endpoint, $context);
       print module_invoke($module, 'server');
 
       // Do not let this output
@@ -168,10 +161,12 @@ function services_xml_output($xml) {
   exit;
 }
 
-function services_set_server_info($module) {
+function services_set_server_info($module, $endpoint, $context) {
   $server_info = new stdClass();
   $server_info->module = $module;
   $server_info->drupal_path = getcwd();
+  $server_info->endpoint = $endpoint;
+  $server_info->context = $context;
   return services_get_server_info($server_info);
 }
 
@@ -383,6 +378,32 @@ function services_resource_uri($path) {
     return call_user_func($formatter, $path);
   }
   return NULL;
+}
+
+/**
+ * Gets a services context
+ *
+ * @param string $name
+ * @return array
+ */
+function services_get_context($name) {
+  $contexts = services_get_contexts();
+  $context = NULL;
+  if (isset($contexts[$name])) {
+    $context = $contexts[$name];
+  }
+  return $context;
+}
+
+/**
+ * Gets all defined services contexts.
+ *
+ * @return array
+ */
+function services_get_contexts() {
+  $contexts = module_invoke_all('services_contexts');
+  drupal_alter('services_contexts', $contexts);
+  return $contexts;
 }
 
 /**

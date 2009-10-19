@@ -6,25 +6,25 @@
  *  The implementation of the key authentication scheme
  */
 
-function _services_keyauth_security_settings() {
+function _services_keyauth_security_settings($settings) {
   $form['services_use_key'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Use keys'),
-    '#default_value'  => variable_get('services_use_key', TRUE),
-    '#description'    => t('When enabled all method calls need to provide a validation token to autheciate themselves with the server.'),
+    '#default_value'  => isset($settings['services_use_key']) ? $settings['services_use_key'] : TRUE,
+    '#description'    => t('When enabled all method calls need to provide a validation token to authenticate themselves with the server.'),
   );
   $form['services_key_expiry'] = array(
     '#type'           => 'textfield',
     '#prefix'         => "<div id='services-key-expiry'>",
     '#suffix'         => "</div>",
     '#title'          => t('Token expiry time'),
-    '#default_value'  => variable_get('services_key_expiry', 30),
+    '#default_value'  => isset($settings['services_key_expiry']) ? $settings['services_key_expiry'] : 30,
     '#description'    => t('The time frame for which the token will be valid. Default is 30 secs'),
   );
   $form['services_use_sessid'] = array(
     '#type'           => 'checkbox',
     '#title'          => t('Use sessid'),
-    '#default_value'  => variable_get('services_use_sessid', TRUE),
+    '#default_value'  => isset($settings['services_use_sessid']) ? $settings['services_use_sessid'] : TRUE,
     '#description'    => t('When enabled, all method calls must include a valid sessid. Only disable this setting if the application will user browser-based cookies.')
   );
   return $form;

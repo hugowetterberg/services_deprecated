@@ -58,8 +58,19 @@ function _services_oauth_authenticate_call($method, $args) {
   }
 }
 
-function _services_oauth_security_settings() {
-  return array();
+function _services_oauth_security_settings($settings) {
+  $form = array();
+  $form['oauth_context'] = array(
+    '#type' => 'select',
+    '#title' => t('OAuth context'),
+    '#description' => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels.'),
+    '#options' => array(
+      '' => t('-- Select a OAuth context'),
+      'context_a' => 'Context A',
+      'context_b' => 'Context B',
+    ),
+  );
+  return $form;
 }
 
 function _services_oauth_security_settings_submit() {

@@ -21,6 +21,12 @@ function services_schema() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
+      'enabled'       => array(
+        'description' => 'Whether the the context is enabled or not',
+        'type'        => 'int',
+        'size'        => 'tiny',
+        'default'     => 1,
+      ),
       'server' => array(
         'description' => 'The name of the server used in this context.',
         'type'        => 'varchar',
@@ -160,6 +166,12 @@ function services_update_6200() {
         'type'        => 'varchar',
         'length'      => 255,
         'not null'    => TRUE,
+      ),
+      'enabled'       => array(
+        'description' => 'Whether the the context is enabled or not',
+        'type'        => 'int',
+        'size'        => 'tiny',
+        'default'     => 1,
       ),
       'server' => array(
         'description' => 'The name of the server used in this context.',

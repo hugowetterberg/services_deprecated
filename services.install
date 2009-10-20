@@ -10,7 +10,52 @@
  * Implementation of hook_schema().
  */
 function services_schema() {
-  return array();
+  $schema = array();
+
+  $schema['services_context'] = array(
+    'description' => 'Stores context information for services',
+    'fields' => array(
+      'context' => array(
+        'description' => 'The name of the context.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+      'server' => array(
+        'description' => 'The name of the server used in this context.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'path' => array(
+        'description' => 'The path to the endpoint for this server.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+      'authentication' => array(
+        'description' => 'The authentication module used in this context.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'authentication_settings' => array(
+        'description' => 'The settings for the authentication module serialized as JSON.',
+        'type'        => 'text',
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'resources' => array(
+        'description' => 'Information about the resources exposed in this context, serialized as JSON.',
+        'type'        => 'text',
+        'not null'    => TRUE,
+      ),
+    ),
+    'primary key' => array('context'),
+  );
+
+  return $schema;
 }
 
 /**
@@ -85,5 +130,73 @@ function services_update_6001() {
 function services_update_6002() {
   $ret = array();
   menu_rebuild();
+  return $ret;
+}
+
+/**
+ * Update 6200 adds the concept of contexts which is a way to expose a
+ * specific server using a specific authentication method, with the full set
+ * or a subset of the installed services.
+ *
+ * This is a major change from the way services worked before: then all
+ * installed servers exposed all installed services and only one
+ * authentication method could be used for all servers. The endpoint was also
+ * non-configurable and was always 'services/[server path]'.
+ *
+ * As with most major changes, this is a _breaking_ update, in the sense that
+ * you will need to reconfigure services. If you have clients that expect the
+ * endpoint to remain the same you can easily set up a context that exposes
+ * your server/authentication method/services set on the old
+ * 'services/[server path]' path.
+ */
+function services_update_6200() {
+  $ret = array();
+
+  db_create_table($ret, 'services_context', array(
+    'description' => 'Stores context information for services',
+    'fields' => array(
+      'context' => array(
+        'description' => 'The name of the context.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+      'server' => array(
+        'description' => 'The name of the server used in this context.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+      ),
+      'path' => array(
+        'description' => 'The path to the endpoint for this server.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
+      'authentication' => array(
+        'description' => 'The authentication module used in this context.',
+        'type'        => 'varchar',
+        'length'      => 32,
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'authentication_settings' => array(
+        'description' => 'The settings for the authentication module serialized as JSON.',
+        'type'        => 'text',
+        'not null'    => TRUE,
+        'default'     => '',
+      ),
+      'resources' => array(
+        'description' => 'Information about the resources exposed in this context, serialized as JSON.',
+        'type'        => 'text',
+        'not null'    => TRUE,
+      ),
+    ),
+    'primary key' => array('context'),
+  ));
+
+  // Remove the auth_module variable as this won't be handled on a global basis anymore
+  variable_del('services_auth_module');
+
   return $ret;
 }

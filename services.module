@@ -59,6 +59,21 @@ function services_menu() {
     'type'              => MENU_CALLBACK,
     'weight'            => -10,
   );
+  $items['admin/build/services/contexts/%/edit'] = array(
+    'title'             => 'Edit',
+    'description'       => 'Edit the context.',
+    'type'              => MENU_DEFAULT_LOCAL_TASK,
+    'weight'            => -10,
+  );
+  $items['admin/build/services/contexts/%/resources'] = array(
+    'title'             => 'Resources',
+    'description'       => 'Edit the resource settings for the context.',
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('services_admin_context_resources', 4),
+    'access arguments'  => array('administer services'),
+    'file'              => 'includes/admin_context.inc',
+    'type'              => MENU_LOCAL_TASK,
+  );
   $items['admin/services/ahah/security-options'] = array(
     'file'              => 'services_admin_browse.inc',
     'page callback'     => '_services_ahah_security_options',
@@ -107,22 +122,31 @@ function services_theme() {
   );
 }
 
+function services_get_servers() {
+  static $servers;
+
+  if (!$servers) {
+    $servers = array();
+    foreach (module_implements('server_info') as $module) {
+      $servers[$module] = call_user_func($module . '_server_info');
+    }
+  }
+
+  return $servers;
+}
+
 /**
  * Callback for server endpoint
  */
 function services_server($server, $endpoint, $context) {
-  // Find which module the server is part of
-  foreach (module_implements('server_info') as $module) {
-    $info = module_invoke($module, 'server_info');
-    if ($info['#path'] == $server) {
-      // call the server
-      services_set_server_info($module, $endpoint, $context);
-      print module_invoke($module, 'server');
+  if (function_exists($server . '_server')) {
+    // call the server
+    services_set_server_info($server, $endpoint, $context);
+    print call_user_func($server . '_server');
 
-      // Do not let this output
-      module_invoke_all('exit');
-      exit;
-    }
+    // Do not let this output
+    module_invoke_all('exit');
+    exit;
   }
   // return 404 if the server doesn't exist
   drupal_not_found();
@@ -221,7 +245,7 @@ function services_auth_info($property = NULL, $module = NULL) {
   }
 
   // If a property was requested it should be returned
-  if ($property) {
+  if ($property && $info[$module]) {
     return isset($info[$module][$property]) ? $info[$module][$property] : FALSE;
   }
 
@@ -398,12 +422,77 @@ function services_get_context($name) {
 /**
  * Gets all defined services contexts.
  *
+ * @param $include_disabled bool
+ *  Pass TRUE if you want to include contexts that are disabled.
+ *  Defaults to FALSE.
  * @return array
  */
-function services_get_contexts() {
-  $contexts = module_invoke_all('services_contexts');
+function services_get_contexts($include_disabled=FALSE) {
+  // Get all contexts that are defined in code
+  $contexts = module_invoke_all('services_contexts', $include_disabled);
+
+  // Allow modules to load contexts from database sources
+  $loaded = module_invoke_all('services_contexts_load', $include_disabled);
+  foreach ($loaded as $name => $def) {
+    $contexts[$name] = $def;
+  }
+
+  // Allow modules to alter the contexts
   drupal_alter('services_contexts', $contexts);
+
+  // Enforce the $include_disabled setting
+  if (!$include_disabled) {
+    foreach ($contexts as $name => $def) {
+      // When the enabled attribute isn't set it's interpreted as enabled
+      if (isset($def['enabled']) && !$def['enabled']) {
+        unset($contexts[$name]);
+      }
+      else {
+        $contexts[$name]['enabled'] = TRUE;
+      }
+    }
+  }
+
   return $contexts;
+}
+
+/**
+ * Implementation of hook_services_contexts_load().
+ */
+function services_services_contexts_load($include_disabled = FALSE) {
+  $contexts = array();
+
+  // Load context from the database
+  if ($include_disabled) {
+    $res = db_query('SELECT * FROM {services_context}');
+  }
+  else {
+    $res = db_query('SELECT * FROM {services_context} WHERE enabled=1');
+  }
+
+  while ($row = db_fetch_array($res)) {
+    $contexts[$row['context']] = _services_context_from_result($row);
+  }
+
+  return $contexts;
+}
+
+function _services_context_from_result($row) {
+  $decode = array(
+    'authentication_settings', 'resources',
+  );
+
+  // Decode the json data
+  foreach ($decode as $key) {
+    if (!empty($row[$key])) {
+      $row[$key] = json_decode($row[$key], TRUE);
+    }
+    else {
+      unset($row[$key]);
+    }
+  }
+
+  return $row;
 }
 
 /**
@@ -413,19 +502,29 @@ function services_get_contexts() {
  *   Optional. When TRUE resource-based service definitions will be translated to
  *   the appropriat method callas and included in the service listing.
  *   Defaults to TRUE.
- * @param string $context
+ * @param string $context_name
  *   Optional. The endpoint context that's being used. Defaults to ''.
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($include_services = TRUE, $context = '') {
-  $cache_key = 'services:' . $context . ':resources' . ($include_services?'_with_services':'');
+function services_get_all_resources($include_services = TRUE, $context_name = '') {
+  $cache_key = 'services:' . $context_name . ':resources' . ($include_services?'_with_services':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
-    $resources = module_invoke_all('service_resource', $context);
+    // Get all installed resources
+    $resources = module_invoke_all('service_resource');
+
+    $context = NULL;
+    if (!empty($context_name)) {
+      // Load the context
+      $context = services_get_context($context_name);
+      // Apply the context on the services
+      services_apply_context($resources, $context, TRUE);
+    }
+
     drupal_alter('service_resources', $resources, $context);
 
     $controllers = array();
@@ -434,14 +533,6 @@ function services_get_all_resources($include_services = TRUE, $context = '') {
     foreach ($controllers as &$controller) {
       if (!isset($controller['#access callback'])) {
         $controller['#access callback'] = 'services_access_menu';
-      }
-
-      if (!isset($controller['#auth'])) {
-        $controller['#auth'] = TRUE;
-      }
-
-      if (!isset($controller['#key'])) {
-        $controller['#key'] = TRUE;
       }
     }
 
@@ -464,24 +555,59 @@ function services_get_all_resources($include_services = TRUE, $context = '') {
   }
 }
 
+/**
+ * Applies the context to a set of resources. Resources and controllers that
+ * aren't supported will be removed (if $strict is set to TRUE) and both 
+ * resources and controllers will get the '#context' attribute set.
+ *
+ * @param array $resources
+ *  An array of resources that the context should be applied on.
+ * @param array $context
+ *  A context information array.
+ * @param bool $strict
+ *  Optional. 
+ * @return void
+ * @author Hugo Wetterberg
+ */
+function services_apply_context(&$resources, $context, $strict=TRUE) {
+  foreach ($resources as $name => &$resource) {
+    $cres = $context && isset($context['resources'][$name]) ? $context['resources'][$name] : array();
+    $resource['#context'] = $cres;
+
+    if ($strict && empty($cres)) {
+      unset($resources[$name]);
+    }
+    else {
+      $crud = array('create', 'retrieve', 'update', 'delete', 'index');
+      foreach ($crud as $op) {
+        $cop = isset($cres[$op]) ? $cres[$op] : array();
+        $resource['#' . $op]['#context'] = $cop;
+        if ($strict && empty($cop)) {
+          unset($resource['#' . $op]);
+        }
+      }
+    }
+  }
+}
+
 function services_process_resources(&$resources, &$controllers, $path=array()) {
   foreach ($resources as $name => &$resource) {
     _services_process_resource($name, $resource, $controllers);
   }
 }
 
-function _services_process_resource($path, &$resource, &$controllers) {
-  $resource['#name'] = $path;
+function _services_process_resource($name, &$resource, &$controllers) {
+  $resource['#name'] = $name;
 
   $keys = array('#retrieve','#create','#update','#delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
-      $controllers[$path . '/' . $key] = &$resource[$key];
+      $controllers[$name . '/' . $key] = &$resource[$key];
     }
   }
 
   if (isset($resource['#index'])) {
-    $controllers[$path . '/#index'] = &$resource['#index'];
+    $controllers[$name . '/#index'] = &$resource['#index'];
   }
 
   if (isset($resource['#relationships'])) {
@@ -493,7 +619,7 @@ function _services_process_resource($path, &$resource, &$controllers) {
         }
         $resource['#relationships'][$relname] = array_merge($resource['#retrieve'], $rel);
       }
-      $controllers[$path . '/relationship/' . $relname] = &$resource['#relationships'][$relname];
+      $controllers[$name . '/relationship/' . $relname] = &$resource['#relationships'][$relname];
     }
   }
 
@@ -505,7 +631,7 @@ function _services_process_resource($path, &$resource, &$controllers) {
         unset($up['#args']);
         $resource['#actions'][$actname] = array_merge($up, $act);
       }
-      $controllers[$path . '/action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$name . '/action/' . $actname] = &$resource['#actions'][$actname];
     }
   }
 
@@ -518,7 +644,7 @@ function _services_process_resource($path, &$resource, &$controllers) {
         }
         $resource['#targeted actions'][$actname] = array_merge($resource['#update'], $act);
       }
-      $controllers[$path . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$name . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
     }
   }
 }

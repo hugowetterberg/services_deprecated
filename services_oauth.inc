@@ -63,11 +63,15 @@ function _services_oauth_security_settings($settings) {
   $form['oauth_context'] = array(
     '#type' => 'select',
     '#title' => t('OAuth context'),
-    '#description' => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels.'),
+    '#description' => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. ' .
+      'Different services contexts may share OAuth contexts and thereby allow the use of consumers and tokens across the services context boundraries.'),
     '#options' => array(
       '' => t('-- Select a OAuth context'),
       'context_a' => 'Context A',
       'context_b' => 'Context B',
+    ),
+    '#default_value' => array(
+      isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
     ),
   );
   return $form;

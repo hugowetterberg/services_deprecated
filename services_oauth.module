@@ -17,6 +17,20 @@ function services_oauth_authentication_info() {
   );
 }
 
+function services_oauth_services_resource_operation_settings_alter(&$settings, $context, $resource, $class, $name=NULL) {
+  require_once('services_oauth.admin.inc');
+  if ($context['authentication'] == 'services_oauth') {
+    if ($rop = get_resource_operation_info($resource, $class, $name)) {
+      $auth_levels = array();
+      foreach (oauth_common_authorization_levels($context) as $name => $level) {
+        $auth_levels[$name] = t($level->title);
+      }
+      _services_oauth_admin_authentication_options(&$settings, $rop, $auth_levels);
+    }
+  }
+
+}
+
 /**
  * Implementation of hook_menu().
  */

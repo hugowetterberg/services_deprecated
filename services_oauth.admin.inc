@@ -102,7 +102,7 @@ function _services_oauth_admin_authentication($form_state, $context='') {
 function _services_oauth_admin_authentication_options(&$element, $controller, $auth_levels) {
   $cred = $controller['#auth'] ? 'token' : ($controller['#key'] ? ($controller['#verify_key'] ? 'consumer' : 'unsigned_consumer') : 'none');
   $element['credentials'] = array(
-    '#type' => 'radios',
+    '#type' => 'select',
     '#title' => t('Required authentication'),
     '#description' => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
     '#options' => array(
@@ -115,7 +115,7 @@ function _services_oauth_admin_authentication_options(&$element, $controller, $a
   );
 
   $element['authorization'] = array(
-    '#type' => 'radios',
+    '#type' => 'select',
     '#title' => t('Required authorization'),
     '#options' => $auth_levels,
     '#default_value' => $controller['#authorization level'],

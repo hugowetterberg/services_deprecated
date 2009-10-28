@@ -67,17 +67,16 @@ function _services_oauth_security_settings($settings) {
       'Different services contexts may share OAuth contexts and thereby allow the use of consumers and tokens across the services context boundraries.'),
     '#options' => array(
       '' => t('-- Select a OAuth context'),
-      'context_a' => 'Context A',
-      'context_b' => 'Context B',
     ),
-    '#default_value' => array(
-      isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
-    ),
+    '#default_value' => isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
   );
-  return $form;
-}
 
-function _services_oauth_security_settings_submit() {
+  $contexts = oauth_common_authorization_contexts();
+  foreach ($contexts as $name => $levels) {
+    $form['oauth_context']['#options'][$name] = $name;
+  }
+
+  return $form;
 }
 
 /**

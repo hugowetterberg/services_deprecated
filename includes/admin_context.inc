@@ -9,6 +9,11 @@ function services_admin_context_edit($form_state, $context_name) {
   $context = services_get_context($context_name);
   $form = array();
 
+  $form['context'] = array(
+    '#type' => 'value',
+    '#value' => $context_name,
+  );
+
   $form['title'] = array(
     '#type' => 'textfield',
     '#title' => t('Context title'),
@@ -16,6 +21,7 @@ function services_admin_context_edit($form_state, $context_name) {
     '#default_value' => $context['title'],
     '#size' => 40,
     '#maxlength' => 255,
+    '#context_attribute' => TRUE,
   );
 
   $servers = services_get_servers();
@@ -31,16 +37,18 @@ function services_admin_context_edit($form_state, $context_name) {
     '#description' => t('Select a server that should be used in this context'),
     '#options' => $server_opts,
     '#default_value' => $context['server'],
+    '#context_attribute' => TRUE,
   );
 
 
   $form['path'] = array(
     '#type' => 'textfield',
-    '#title' => t('Server endpoint'),
+    '#title' => t('Path to server endpoint'),
     '#description' => t('This is the endpoint for your server.'),
     '#default_value' => $context['path'],
     '#size' => 40,
     '#maxlength' => 255,
+    '#context_attribute' => TRUE,
   );
 
   $auth_modules = module_implements('authentication_info');
@@ -50,13 +58,14 @@ function services_admin_context_edit($form_state, $context_name) {
     $auth_options[$info['#description']][$module] = $info['#title'];
   }
 
-  $form['security']['auth_module'] = array(
+  $form['authentication'] = array(
     '#type' => 'select',
     '#title' => t('Authorization module'),
     '#description' => t('The authorization module determines what authentication scheme should be used with your service. If no authorization module is configured the standard session handling will be used.'),
     '#options' => $auth_options,
     '#required' => FALSE,
     '#default_value' => array($context['authentication']),
+    '#context_attribute' => TRUE,
     '#ahah' => array(
       'path' => 'admin/services/ahah/security-options',
       'wrapper' => 'security-module-options',
@@ -66,9 +75,11 @@ function services_admin_context_edit($form_state, $context_name) {
 
   // Placeholder for the auth module options
   // also used as wrapper for ahah.
-  $form['security']['options'] = array(
+  $form['authentication_settings'] = array(
     '#prefix' => '<div id="security-module-options">',
     '#suffix' => '</div>',
+    '#tree'   => TRUE,
+    '#context_attribute' => TRUE,
     'settings' => array(
       '#value' => sprintf('<div class="description">%s</div>',
         t('Select a authorization module to configure security')),
@@ -79,18 +90,41 @@ function services_admin_context_edit($form_state, $context_name) {
   if (!empty($context['authentication'])) {
     $settings = services_auth_invoke_custom($context['authentication'], 'security_settings', $context['authentication_settings']);
     if (is_array($settings)) {
-      $form['security']['options']['settings'] = $settings;
+      $form['authentication_settings']['settings'] = $settings;
     }
   }
 
+  $form['save'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save'),
+  );
+
   return $form;
+}
+
+function services_admin_context_edit_submit($form, $form_state) {
+  $values = $form_state['values'];
+  $values['authentication_settings'] = $values['authentication_settings']['settings'];
+  $context = services_get_context($values['context']);
+
+  foreach (element_children($form) as $name) {
+    $info = $form[$name];
+    if (isset($info['#context_attribute']) && $info['#context_attribute']) {
+      $context[$name] = $values[$name];
+    }
+  }
+
+  services_write_context($context);
 }
 
 function services_admin_context_resources($form_state, $context_name) {
   $context = services_get_context($context_name);
   $form = array();
 
-
+  $form['context_name'] = array(
+    '#type' => 'value',
+    '#value' => $context_name
+  );
 
   $ops = array(
     'create' => t('Create'),
@@ -102,6 +136,10 @@ function services_admin_context_resources($form_state, $context_name) {
 
   $resources = services_get_all_resources(TRUE);
   services_apply_context($resources, $context, FALSE);
+
+  $res = array(
+    '#tree' => TRUE,
+  );
 
   foreach ($resources as $name => $resource) {
     $rc = $resource['#context'];
@@ -124,18 +162,21 @@ function services_admin_context_resources($form_state, $context_name) {
       '#description' => t('The alias you enter here will be used instead of the resource name.'),
       '#size' => 40,
       '#maxlength' => 255,
-      '#default_value' => isset($rc['#alias']) ? $rc['#alias'] : '',
+      '#default_value' => isset($rc['alias']) ? $rc['alias'] : '',
     );
 
+    $res_set['operations'] = array(
+      '#tree' => TRUE,
+    );
     foreach ($ops as $op => $title) {
       if (isset($resource['#' . $op])) {
-        $res_set[$op] = array(
+        $res_set['operations'][$op] = array(
           '#type' => 'fieldset',
           '#title' => $title,
           '#collapsible' => TRUE,
           '#collapsed' => TRUE,
         );
-        _services_resource_operation_settings($res_set[$op], $context, $resource, $op);
+        _services_resource_operation_settings($res_set['operations'][$op], $context, $resource, $op);
       }
     }
 
@@ -147,8 +188,10 @@ function services_admin_context_resources($form_state, $context_name) {
     //   '#value' => var_export($resource, TRUE),
     // );
 
-    $form[$name] = $res_set;
+    $res[$name] = $res_set;
   }
+  
+  $form['resources'] = $res;
 
   $form['save'] = array(
     '#type' => 'submit',
@@ -158,8 +201,40 @@ function services_admin_context_resources($form_state, $context_name) {
   return $form;
 }
 
+function services_admin_context_resources_validate($form, $form_state) {
+  $res = $form_state['values']['resources'];
+
+  // Validate aliases
+  foreach ($res as $name => $resource) {
+    if (!empty($resource['alias'])) {
+      if (!preg_match('/^[a-z-]+$/', $resource['alias'])) {
+        form_set_error("resources][{$name}][alias", t("The alias for the !name may only contain lower case a-z and dashes.", array(
+          '!name' => $form['resources'][$name]['#title'],
+        )));
+      }
+    }
+  }
+}
+
 function services_admin_context_resources_submit($form, $form_state) {
-  var_dump($form_state); die;
+  $resources = $form_state['values']['resources'];
+  $context = services_get_context($form_state['values']['context_name']);
+
+  foreach ($resources as $name => $resource) {
+    $c = isset($context['resources'][$name]) ? $context['resources'][$name] : array();
+
+    $c['alias'] = $resource['alias'];
+    foreach ($resource['operations'] as $op => $def) {
+      $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
+      $cop = array_merge($cop, $def);
+      $c['operations'][$op] = $cop;
+    }
+
+    $context['resources'][$name] = $c;
+  }
+
+  drupal_set_message(t('Your context has been updated'), 'info');
+  services_write_context($context);
 }
 
 /**

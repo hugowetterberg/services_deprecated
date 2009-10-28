@@ -340,8 +340,8 @@ function _services_ahah_security_options() {
   $cached_form_state = array();
   $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
 
-  if (!empty($_POST['auth_module'])) {
-    $settings = services_auth_invoke_custom($_POST['auth_module'], 'security_settings');
+  if (!empty($_POST['authentication'])) {
+    $settings = services_auth_invoke_custom($_POST['authentication'], 'security_settings');
   }
 
   if (is_array($settings)) {

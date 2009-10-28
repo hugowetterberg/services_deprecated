@@ -5,6 +5,8 @@
   <div class="services-context">
     <h2><?php print $info['title'] ?></h2>
     <dl>
+      <dt><?php print t('Path') ?></dt>
+      <dd><?php print $info['path'] ?></dd>
       <dt><?php print t('Server') ?></dt>
       <dd><?php print $info['server'] ?></dd>
       <dt><?php print t('Authentication') ?></dt>

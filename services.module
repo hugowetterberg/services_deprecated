@@ -420,6 +420,29 @@ function services_get_context($name) {
 }
 
 /**
+ * Saves a services context.
+ *
+ * @param array $definition
+ */
+function services_write_context($definition) {
+  $encode = array(
+    'authentication_settings', 'resources',
+  );
+
+  // Encode complex attributes as JSON
+  foreach ($encode as $key) {
+    if (isset($definition[$key])) {
+      $definition[$key] = json_encode($definition[$key]);
+    }
+  }
+
+  $update = db_result(db_query("SELECT COUNT(context) FROM {services_context} WHERE context='%s'", array(
+    ':context' => $definition['context'],
+  ))) ? array('context') : NULL;
+  drupal_write_record('services_context', $definition, $update);
+}
+
+/**
  * Gets all defined services contexts.
  *
  * @param $include_disabled bool
@@ -430,6 +453,11 @@ function services_get_context($name) {
 function services_get_contexts($include_disabled=FALSE) {
   // Get all contexts that are defined in code
   $contexts = module_invoke_all('services_contexts', $include_disabled);
+  // Assign the context name to the context attribute to make
+  // context from code consistent with those loaded from db.
+  foreach ($contexts as $name => $def) {
+    $contexts[$name]['context'] = $name;
+  }
 
   // Allow modules to load contexts from database sources
   $loaded = module_invoke_all('services_contexts_load', $include_disabled);
@@ -567,7 +595,6 @@ function services_get_all_resources($include_services = TRUE, $context_name = ''
  * @param bool $strict
  *  Optional. 
  * @return void
- * @author Hugo Wetterberg
  */
 function services_apply_context(&$resources, $context, $strict=TRUE) {
   foreach ($resources as $name => &$resource) {
@@ -580,7 +607,7 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
     else {
       $crud = array('create', 'retrieve', 'update', 'delete', 'index');
       foreach ($crud as $op) {
-        $cop = isset($cres[$op]) ? $cres[$op] : array();
+        $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
         $resource['#' . $op]['#context'] = $cop;
         if ($strict && empty($cop)) {
           unset($resource['#' . $op]);

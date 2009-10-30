@@ -21,6 +21,12 @@ function services_schema() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
+      'title' => array(
+        'description' => 'The title of the context.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
       'enabled'       => array(
         'description' => 'Whether the the context is enabled or not',
         'type'        => 'int',

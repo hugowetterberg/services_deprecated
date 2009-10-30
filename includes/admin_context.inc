@@ -180,6 +180,23 @@ function services_admin_context_resources($form_state, $context_name) {
       }
     }
 
+    if (!empty($resource['#targeted actions'])) {
+      $res_set['targeted_actions'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Targeted actions'),
+        '#tree' => TRUE,
+      );
+      foreach ($resource['#targeted actions'] as $action => $definition) {
+        $res_set['targeted_actions'][$action] = array(
+          '#type' => 'fieldset',
+          '#title' => $action,
+          '#collapsible' => TRUE,
+          '#collapsed' => TRUE,
+        );
+        _services_resource_operation_settings($res_set['targeted_actions'][$action], $context, $resource, 'targeted actions', $action);
+      }
+    }
+
     drupal_alter('services_resource_settings', $res_set, $resource);
 
     // $res_set['dmp'] = array(
@@ -190,7 +207,7 @@ function services_admin_context_resources($form_state, $context_name) {
 
     $res[$name] = $res_set;
   }
-  
+
   $form['resources'] = $res;
 
   $form['save'] = array(
@@ -228,6 +245,21 @@ function services_admin_context_resources_submit($form, $form_state) {
       $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
       $cop = array_merge($cop, $def);
       $c['operations'][$op] = $cop;
+    }
+
+    $classes = array(
+      'actions' => 'actions',
+      'targeted_actions' => 'targeted actions',
+      'relationships' => 'relationships',
+    );
+    foreach ($classes as $element => $class) {
+      if (!empty($resource[$element])) {
+        foreach ($resource[$element] as $act => $def) {
+          $cop = isset($c[$class][$act]) ? $c[$class][$act] : array();
+          $cop = array_merge($cop, $def);
+          $c[$class][$act] = $cop;
+        }
+      }
     }
 
     $context['resources'][$name] = $c;

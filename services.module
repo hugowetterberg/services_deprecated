@@ -142,7 +142,7 @@ function services_server($server, $endpoint, $context) {
   if (function_exists($server . '_server')) {
     // call the server
     services_set_server_info($server, $endpoint, $context);
-    print call_user_func($server . '_server');
+    print call_user_func($server . '_server', $endpoint, $context);
 
     // Do not let this output
     module_invoke_all('exit');
@@ -298,6 +298,8 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
  * This is the magic function through which all remote method calls must pass.
  */
 function services_method_call($method_name, $args = array(), $browsing = FALSE) {
+  $info = services_get_server_info();
+  $context = services_get_context($info->context);
   if (is_array($method_name) && isset($method_name['#callback'])) {
     $method = $method_name;
   }
@@ -321,7 +323,7 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   }
 
   // Check authentication
-  if ($auth_error = services_auth_invoke('authenticate_call', $method, $method_name, $args)) {
+  if ($auth_error = services_auth_invoke_custom($context['authentication'], 'authenticate_call', $method, $method_name, $args)) {
     if ($browsing) {
       drupal_set_message(t('Authentication failed: !message', array('!message' => $auth_error)), 'error');
     }
@@ -538,7 +540,7 @@ function _services_context_from_result($row) {
 function services_get_all_resources($include_services = TRUE, $context_name = '') {
   $cache_key = 'services:' . $context_name . ':resources' . ($include_services?'_with_services':'');
 
-  if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
+  if (($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
@@ -611,6 +613,23 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
         $resource['#' . $op]['#context'] = $cop;
         if ($strict && empty($cop)) {
           unset($resource['#' . $op]);
+        }
+      }
+
+      $classes = array('targeted actions', 'actions', 'relationships');
+      foreach ($classes as $class) {
+        if (!empty($resource['#' . $class])) {
+          foreach ($resource['#' . $class] as $op => $def) {
+            $cop = isset($cres[$class][$op]) ? $cres[$class][$op] : array();
+            if (empty($cop)) {
+              if ($strict) {
+                unset($resource['#' . $op]);
+              }
+            }
+            else {
+              $resource['#' . $class][$op]['#context'] = $cop;
+            }
+          }
         }
       }
     }

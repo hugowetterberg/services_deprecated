@@ -12,7 +12,12 @@
  *  Returns nothing, or a error message if authentication fails
  */
 function _services_oauth_authenticate_call($method, $args) {
-  if (!isset($method['#key']) || !$method['#key']) {
+  $context = $method['#context'];
+  $cred = isset($context['oauth_credentials']) ? $context['oauth_credentials'] : 'token';
+  $auth_level = isset($context['oauth_authorization']) ? $context['oauth_authorization'] : '*';
+
+  // If no credentials are needed we'll pass this one through
+  if ($cred == 'none') {
     return FALSE;
   }
 
@@ -21,7 +26,7 @@ function _services_oauth_authenticate_call($method, $args) {
 
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
-    if (!$signed && $method['#verify_key']) {
+    if (!$signed && ($cred=='consumer' || $cred=='token')) {
       throw new OAuthException('The request must be signed');
     }
 
@@ -29,8 +34,10 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing consumer token');
     }
 
+    // TODO: Check that the consumer is in the right context
+
     // Validate the token, if it's required by the method
-    if ($method['#auth']) {
+    if ($cred == 'token') {
       if (empty($token->key)) {
         throw new OAuthException('Missing access token');
       }
@@ -40,7 +47,7 @@ function _services_oauth_authenticate_call($method, $args) {
       }
 
       // Check that the consumer has been granted the required authorization level
-      if (!in_array('*', $token->services) && !in_array($method['#authorization level'], $token->services)) {
+      if (!in_array('*', $token->services) && !in_array($auth_level, $token->services)) {
         throw new OAuthException('The consumer is not authorized to access this service');
       }
     }

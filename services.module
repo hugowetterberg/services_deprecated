@@ -317,7 +317,9 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   foreach ($method['#args'] as $key => $arg) {
     if (!$arg['#optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {
-        return services_error(t('Missing required arguments.'), 406);
+        return services_error(t('Missing required argument !name.', array(
+          '!name' => $key,
+        )), 406);
       }
     }
   }

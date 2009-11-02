@@ -330,3 +330,36 @@ function _services_resource_operation_settings(&$settings, $context, $resource, 
     drupal_alter('services_resource_operation_settings', $settings, $context, $resource, $class, $name);
   }
 }
+
+/**
+ * Callback for the security configuration form ahah.
+ */
+function _services_ahah_security_options() {
+  $cached_form_state = array();
+  $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
+
+  if (!empty($_POST['authentication'])) {
+    $settings = services_auth_invoke_custom($_POST['authentication'], 'security_settings');
+  }
+
+  if (is_array($settings)) {
+    $cached_form['security']['options']['settings'] = $settings;
+  }
+  else {
+    unset($cached_form['security']['options']['settings']);
+  }
+
+  form_set_cache($_POST['form_build_id'], $cached_form, $cached_form_state);
+
+  $form_state = array('submitted' => FALSE);
+  $options = $cached_form['security']['options'];
+  unset($options['#prefix'], $options['#suffix']);
+  $options = form_builder('_services_ahah_security_options', $options, $form_state);
+  $output = drupal_render($options);
+
+  print drupal_to_js(array(
+    'status' => TRUE,
+    'data' => $output,
+  ));
+  exit;
+}

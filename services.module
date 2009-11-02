@@ -75,7 +75,7 @@ function services_menu() {
     'type'              => MENU_LOCAL_TASK,
   );
   $items['admin/services/ahah/security-options'] = array(
-    'file'              => 'services_admin_browse.inc',
+    'file'              => 'includes/admin_context.inc',
     'page callback'     => '_services_ahah_security_options',
     'access arguments'  => array('administer services'),
     'type'              => MENU_CALLBACK,
@@ -571,16 +571,17 @@ function services_get_all_resources($include_services = TRUE, $context_name = ''
     drupal_alter('service_resources_post_processing', $resources, $context);
     services_auth_invoke('alter_methods', $controllers, $context);
 
-    if ($include_services) {
-      $services = services_get_all(FALSE, $context);
-
-      // Include the file that has the necessary functions for translating
-      // methods to resources.
-      if (!empty($services)) {
-        module_load_include('inc', 'services', 'services.resource-translation');
-        $resources = array_merge(_services_services_as_resources($services), $resources);
+    $aliased = array();
+    // Apply any aliases from context
+    foreach ($resources as $key => $def) {
+      if (!empty($def['#context']['alias'])) {
+        $aliased[$def['#context']['alias']] = $def;
+      }
+      else {
+        $aliased[$key] = $def;
       }
     }
+    $resources = $aliased;
 
     cache_set($cache_key, $resources);
     return $resources;
@@ -589,7 +590,7 @@ function services_get_all_resources($include_services = TRUE, $context_name = ''
 
 /**
  * Applies the context to a set of resources. Resources and controllers that
- * aren't supported will be removed (if $strict is set to TRUE) and both 
+ * aren't supported will be removed (if $strict is set to TRUE) and both
  * resources and controllers will get the '#context' attribute set.
  *
  * @param array $resources
@@ -644,6 +645,18 @@ function services_process_resources(&$resources, &$controllers, $path=array()) {
   }
 }
 
+/**
+ * Process resource runs through all the controllers of a resource and applies
+ * some inheritance logic and adds the to the $controllers array.
+ *
+ * @param string $name
+ *  The name of the resource
+ * @param array &$resource
+ *  The resource definition
+ * @param array &$controllers
+ *  An that will be fillew with all the controllers for the resource.
+ * @return void
+ */
 function _services_process_resource($name, &$resource, &$controllers) {
   $resource['#name'] = $name;
 
@@ -699,82 +712,6 @@ function _services_process_resource($name, &$resource, &$controllers) {
 
 function services_delegate_access($perm) {
   return services_auth_invoke('delegate_access', $perm);
-}
-
-/**
- * Gets all service definitions
- *
- * @param bool $include_resources
- *   Optional. When TRUE resource-based service definitions will be translated to
- *   the appropriat method callas and included in the service listing.
- *   Defaults to TRUE.
- * @param string $context
- *   The endpoint context that's being used.
- * @return array
- *   An array containing all services and thir methods
- */
-function services_get_all($include_resources = TRUE, $context='') {
-  $cache_key = 'services:' . $context . ':methods' . ($include_resources?'_with_resources':'');
-
-  if (($cache = cache_get($cache_key)) && isset($cache->data)) {
-    return $cache->data;
-  }
-  else {
-    $methods = module_invoke_all('service', $context);
-
-    foreach ($methods as $key => $method) {
-
-      if (!isset($methods[$key]['#access callback'])) {
-        $methods[$key]['#access callback'] = 'services_access_menu';
-      }
-
-      if (!isset($methods[$key]['#args'])) {
-        $methods[$key]['#args'] = array();
-      }
-
-      // set defaults for args
-      foreach ($methods[$key]['#args'] as $arg_key => $arg) {
-        if (is_array($arg)) {
-          if (!isset($arg['#optional'])) {
-            $methods[$key]['#args'][$arg_key]['#optional'] = FALSE;
-          }
-        }
-        else {
-          $arr_arg = array();
-          $arr_arg['#name'] = t('unnamed');
-          $arr_arg['#type'] = $arg;
-          $arr_arg['#description'] = t('No description given.');
-          $arr_arg['#optional'] = FALSE;
-          $methods[$key]['#args'][$arg_key] = $arr_arg;
-        }
-      }
-      reset($methods[$key]['#args']);
-    }
-
-    // Allow auth module to alter the methods
-    services_auth_invoke('alter_methods', $methods, $context);
-
-    // Add resources if wanted
-    if ($include_resources) {
-      $resources = services_get_all_resources(FALSE, $context);
-
-      // Include the file that has the necessary functions for translating
-      // resources to method calls.
-      if (!empty($resources)) {
-        module_load_include('inc', 'services', 'services.resource-translation');
-
-        // Translate all resources
-        foreach ($resources as $name => $def) {
-          foreach(_services_resource_as_services($def) as $method) {
-            $methods[] = $method;
-          }
-        }
-      }
-    }
-
-    cache_set($cache_key, $methods);
-    return $methods;
-  }
 }
 
 /**

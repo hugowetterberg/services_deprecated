@@ -25,7 +25,7 @@ function services_oauth_services_resource_operation_settings_alter(&$settings, $
       foreach (oauth_common_authorization_levels($oauth_context) as $name => $level) {
         $auth_levels[$name] = t($level->title);
       }
-      _services_oauth_admin_authentication_options(&$settings, $rop, $auth_levels);
+      _services_oauth_admin_authentication_options($settings, $rop, $auth_levels);
     }
   }
 }

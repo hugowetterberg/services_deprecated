@@ -122,6 +122,16 @@ function services_theme() {
   );
 }
 
+function services_bypass_secure_site($path, $menu_item=NULL) {
+  $bypass = FALSE;
+  if ($menu_item && $menu_item['page_callback'] == 'services_server') {
+    $context = services_get_context($menu_item['page_arguments'][2]);
+    // Only bypass securesite if a authentication module is enabled.
+    $bypass = $context && !empty($context['authentication']);
+  }
+  return $bypass;
+}
+
 function services_get_servers() {
   static $servers;
 

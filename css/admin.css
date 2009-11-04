@@ -1,0 +1,23 @@
+.services-context {
+  background-color: #FFFFFF;
+  background-color: rgba(255,255,255,0.5);
+  border-bottom: 0.5em solid #999999;
+  padding: 1em;
+}
+
+.services-context h2 {
+  margin-bottom: 0.5em;
+}
+
+.services-context label {
+  font-weight: bold;
+}
+
+.services-context .context-info {
+  float: left;
+  width: 49.9%;
+}
+
+.services-context a.edit-context {
+  clear: both;
+}

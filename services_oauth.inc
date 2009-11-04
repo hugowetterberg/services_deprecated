@@ -24,6 +24,8 @@ function _services_oauth_authenticate_call($method, $args) {
   try {
     module_load_include('inc', 'oauth_common');
 
+    $info = services_get_server_info();
+    $service_context = services_get_context($info->context);
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
     if (!$signed && ($cred=='consumer' || $cred=='token')) {
@@ -34,7 +36,9 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing consumer token');
     }
 
-    // TODO: Check that the consumer is in the right context
+    if ($consumer->context !== $service_context['authentication_settings']['oauth_context']) {
+      throw new OAuthException('The consumer is not valid in the current context');
+    }
 
     // Validate the token, if it's required by the method
     if ($cred == 'token') {

@@ -5,14 +5,38 @@ function services_admin_context_index() {
   return theme('services_context_index', services_get_contexts());
 }
 
+function services_admin_context_add($form_state) {
+  return _services_admin_context_form();
+}
+
 function services_admin_context_edit($form_state, $context_name) {
-  $context = services_get_context($context_name);
+  return _services_admin_context_form($context_name);
+}
+
+function _services_admin_context_form($context_name=NULL) {
+  if (!empty($context_name)) {
+    $context = services_get_context($context_name);
+  }
+  else {
+    $context = array();
+  }
   $form = array();
 
-  $form['context'] = array(
-    '#type' => 'value',
-    '#value' => $context_name,
-  );
+  if (!empty($context_name)) {
+    $form['context'] = array(
+      '#type' => 'value',
+      '#value' => $context_name,
+    );
+  }
+  else {
+    // TODO: Allow renaming of context that aren't defined in code?
+    $form['context'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Context name'),
+      '#default_value' => '',
+      '#description' => t('The machine-readable name of your context'),
+    );
+  }
 
   $form['title'] = array(
     '#type' => 'textfield',
@@ -60,8 +84,8 @@ function services_admin_context_edit($form_state, $context_name) {
 
   $form['authentication'] = array(
     '#type' => 'select',
-    '#title' => t('Authorization module'),
-    '#description' => t('The authorization module determines what authentication scheme should be used with your service. If no authorization module is configured the standard session handling will be used.'),
+    '#title' => t('Authentication module'),
+    '#description' => t('The authentication module determines what authentication scheme should be used with your service. If no authentication module is configured the standard session handling will be used.'),
     '#options' => $auth_options,
     '#required' => FALSE,
     '#default_value' => array($context['authentication']),
@@ -82,7 +106,8 @@ function services_admin_context_edit($form_state, $context_name) {
     '#context_attribute' => TRUE,
     'settings' => array(
       '#value' => sprintf('<div class="description">%s</div>',
-        t('Select a authorization module to configure security')),
+        // TODO: Make sure that we fall back to using sessions. No 401 plz
+        t('Select a authentication module to configure security. Contexts without a configured security module will use standard Drupal sessions - which might be suitable for services consumed by JavaScript and Flash movies on the local site.')),
     ),
   );
 

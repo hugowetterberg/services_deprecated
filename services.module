@@ -43,10 +43,19 @@ function services_menu() {
     'file'              => 'includes/admin_context.inc',
   );
   $items['admin/build/services/contexts'] = array(
-    'title'             => 'Context',
+    'title'             => 'Contexts',
     'description'       => 'Administer the different services contexts.',
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
+  );
+  $items['admin/build/services/context-add'] = array(
+    'title'             => 'Add context',
+    'description'       => 'Add a services context.',
+    'page callback'     => 'drupal_get_form',
+    'page arguments'    => array('services_admin_context_add'),
+    'access arguments'  => array('administer services'),
+    'file'              => 'includes/admin_context.inc',
+    'type'              => MENU_LOCAL_TASK,
   );
   $items['admin/build/services/contexts/%'] = array(
     'title callback'    => '_services_edit_context_title',
@@ -733,16 +742,7 @@ function services_method_load($method) {
 }
 
 function services_method_get($method_name, $context='') {
-  static $method_cache;
-  if (!isset($method_cache[$context]) || !isset($method_cache[$context][$method_name])) {
-    foreach (services_get_all(TRUE, $context) as $method) {
-      if ($method_name == $method['#method']) {
-        $method_cache[$context][$method_name] = $method;
-        break;
-      }
-    }
-  }
-  return $method_cache[$context][$method_name];
+  // TODO: This function must be rewritten to support the resource model
 }
 
 /**

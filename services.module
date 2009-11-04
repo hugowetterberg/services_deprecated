@@ -1,27 +1,29 @@
 <?php
 // $Id: services.module,v 1.8.2.88.2.6 2009/09/05 13:57:58 marcingy Exp $
+
 /**
  * @author Services Dev Team
  * @file
- *  Provides a generic by powerful API for web services.
+ *  Provides a generic but powerful API for web services.
  */
+
 /**
  * Implementation of hook_help().
  */
 function services_help($path, $arg) {
+  $output = NULL;
+
   switch ($path) {
     case 'admin/help#services':
-      return '<p>'. t('Visit the <a href="@handbook_url">Services Handbook</a> for help and information.', array('@handbook_url' => 'http://drupal.org/node/109782')) .'</p>';
-
+      $output = '<p>'. t('Visit the <a href="@handbook_url">Services Handbook</a> for help and information.', array('@handbook_url' => 'http://drupal.org/node/109782')) .'</p>';
+      break;
     case 'admin/build/services':
-    case 'admin/build/services/browse':
       $output = '<p>'. t('Services are collections of methods available to remote applications. They are defined in modules, and may be accessed in a number of ways through server modules. Visit the <a href="@handbook_url">Services Handbook</a> for help and information.', array('@handbook_url' => 'http://drupal.org/node/109782')) .'</p>';
-      $output .= '<p>'. t('All enabled services and methods are shown. Click on any method to view information or test.') .'</p>';      return $output;
-
-    case 'admin/build/services/keys':
-      return t('An API key is required to allow an application to access Drupal remotely.');
-
+      $output .= '<p>'. t('All enabled services and methods are shown. Click on any method to view information or test.') .'</p>';
+      break;
   }
+
+  return $output;
 }
 
 /**
@@ -95,6 +97,7 @@ function services_menu() {
     'type'              => MENU_CALLBACK,
   );
 
+  // Add menu items for the different context endpoints
   $contexts = services_get_contexts();
   foreach ($contexts as $name => $context) {
     $items[$context['path']] = array(
@@ -109,6 +112,9 @@ function services_menu() {
   return $items;
 }
 
+/**
+ * Menu system title callback for the edit context menu item.
+ */
 function _services_edit_context_title($title, $context) {
   $context = services_get_context($context);
   return t($title, array(
@@ -121,9 +127,6 @@ function _services_edit_context_title($title, $context) {
  */
 function services_theme() {
   return array(
-    'services_admin_browse_test' => array(
-      'arguments' => array('form' => NULL),
-    ),
     'services_context_index' => array(
       'template' => 'services_context_index',
       'arguments' => array('contexts' => NULL),
@@ -131,6 +134,9 @@ function services_theme() {
   );
 }
 
+/**
+ * Implementation of hook_bypass_secure_site().
+ */
 function services_bypass_secure_site($path, $menu_item=NULL) {
   $bypass = FALSE;
   if ($menu_item && $menu_item['page_callback'] == 'services_server') {
@@ -141,6 +147,13 @@ function services_bypass_secure_site($path, $menu_item=NULL) {
   return $bypass;
 }
 
+/**
+ * Returns information about the installed server modules on the system.
+ *
+ * @return array
+ *  An associative array keyed after module name containing information about
+ *  the installed server implementations.
+ */
 function services_get_servers() {
   static $servers;
 
@@ -160,7 +173,12 @@ function services_get_servers() {
 function services_server($server, $endpoint, $context) {
   if (function_exists($server . '_server')) {
     // call the server
-    services_set_server_info($server, $endpoint, $context);
+    services_set_server_info_from_array(array(
+      'module' => $server,
+      'endpoint' => $endpoint,
+      'context' => $context,
+      'drupal_path' => getcwd(),
+    ));
     print call_user_func($server . '_server', $endpoint, $context);
 
     // Do not let this output
@@ -175,17 +193,16 @@ function services_server($server, $endpoint, $context) {
  * Callback for crossdomain.xml
  */
 function services_crossdomain_xml() {
-  global $base_url;
   $output = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">'."\n";
-  $output .= '<cross-domain-policy>'."\n";
-  $output .= '  <allow-access-from domain="'. check_plain($_SERVER['HTTP_HOST']) .'" />'."\n";
-  $output .= '  <allow-access-from domain="*.'. check_plain($_SERVER['HTTP_HOST']) .'" />'."\n";
-  $keys = services_get_keys();
+  $output .= '<cross-domain-policy>' . "\n";
 
-  foreach ($keys as $key) {
-    if (!empty($key->domain)) {
-      $output .= '  <allow-access-from domain="'. check_plain($key->domain) .'" />'."\n";
-      $output .= '  <allow-access-from domain="*.'. check_plain($key->domain) .'" />'."\n";
+  $domains = module_invoke_all('services_crossdomain_domain_policy');
+  drupal_alter('services_crossdomain_domain_policy', $domains);
+
+  foreach ($domains as $domain => $info) {
+    $output .= '  <allow-access-from domain="' . check_plain($domain) . '" />' . "\n";
+    if ($info['subdomain_wildcard']) {
+      $output .= '  <allow-access-from domain="*.' . check_plain($domain) . '" />' . "\n";
     }
   }
 
@@ -194,46 +211,112 @@ function services_crossdomain_xml() {
   services_xml_output($output);
 }
 
+/**
+ * Implementation of hook_services_crossdomain_domain_policy().
+ */
+function services_services_crossdomain_domain_policy() {
+  // Allow our own domain and it's subdomains
+  return array(
+    $_SERVER['HTTP_HOST'] => array(
+      'subdomain_wildcard' => TRUE,
+    ),
+  );
+}
+
+/**
+ * Helper function for services_crossdomain_xml().
+ * Outputs the necessary http headers and xml processing instruction then exits.
+ *
+ * @param string $xml
+ *  The xml document to print.
+ * @return void
+ *  This function never returns, it always exits.
+ */
 function services_xml_output($xml) {
-  $xml = '<?xml version="1.0"?>'."\n". $xml;
+  $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $xml;
   header('Connection: close');
-  header('Content-Length: '. drupal_strlen($xml));
+  header('Content-Length: ' . strlen($xml));
   header('Content-Type: text/xml');
-  header('Date: '. date('r'));
+  header('Date: ' . date('r'));
   echo $xml;
   exit;
 }
 
-function services_set_server_info($module, $endpoint, $context) {
-  $server_info = new stdClass();
-  $server_info->module = $module;
-  $server_info->drupal_path = getcwd();
-  $server_info->endpoint = $endpoint;
-  $server_info->context = $context;
-  return services_get_server_info($server_info);
+/**
+ * Sets a server info value
+ *
+ * @param string $key
+ *  The key of the server info value.
+ * @param mixed $value
+ *  The value.
+ * @return void
+ */
+function services_set_server_info($key, $value) {
+  $info = &services_server_info();
+  $info->$key = $value;
 }
 
-function services_get_server_info($server_info = NULL) {
-  static $info;
-  if (!$info && $server_info) {
-    $info = $server_info;
+/**
+ * Sets multiple server info values from a associative array.
+ *
+ * @param array $values
+ *  An associative array containing server info values.
+ * @return void
+ */
+function services_set_server_info_from_array($values) {
+  $info = &services_server_info();
+  foreach ($values as $key => $value) {
+    $info->$key = $value;
   }
-  return $info;
+}
+
+/**
+ * Gets a server info value.
+ *
+ * @param string $key
+ *  The key for the server info value.
+ * @param mixed $default
+ *  The default value to return if the value isn't defined.
+ * @return mixed
+ *  The server info value.
+ */
+function services_get_server_info($key, $default = NULL) {
+  $info = services_server_info();
+  $value = $default;
+  if (isset($info->$key)) {
+    $value = $info->$key;
+  }
+  return $value;
+}
+
+/**
+ * Gets the server info object.
+ *
+ * @param bool $reset
+ *  Pass TRUE if the server info object should be reset.
+ * @return object
+ *  Returns the server info object.
+ */
+function services_server_info($reset = FALSE) {
+  static $info;
+  if (!$info) {
+    $info = new stdClass();
+  }
+  return &$info;
 }
 
 /**
  * Prepare an error message for returning to the server.
  */
 function services_error($message, $code = 0, $exception = NULL) {
-  $server_info = services_get_server_info();
+  $server_module = services_get_server_info('module');
 
   // Look for custom error handling function.
-  // Should be defined in each server module.
-  if ($server_info && module_hook($server_info->module, 'server_error')) {
-    return module_invoke($server_info->module, 'server_error', $message, $code, $exception);
+  // Should be defined in all server modules.
+  if ($server_module && function_exists($server_module . '_server_error')) {
+    $message = call_user_func($server_module . '_server_error', $message, $code, $exception);
   }
 
-  // No custom error handling function found.
   return $message;
 }
 
@@ -245,7 +328,7 @@ function services_error($message, $code = 0, $exception = NULL) {
  * @param string $property
  *  Optional. The name of a single property to get. Defaults to null.
  * @param string $module
- *  Optional. The module to get info forDefaults to the current authentication module.
+ *  Optional. The module to get info for. Defaults to the current authentication module.
  * @return mixed
  *  The information array or property value, or FALSE if the information or property wasn't found
  */
@@ -314,26 +397,22 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
 }
 
 /**
- * This is the magic function through which all remote method calls must pass.
+ * Performs access checks and executes a services controller.
+ * This method is called by server implementations.
+ *
+ * @param array $controller
+ *  An array containing information about the controller
+ * @param array $args
+ *  The arguments that should be passed to the controller.
+ * @param array $options
+ *  Options for the execution. Use 'skip_authentication'=>TRUE to skip the
+ *  services-specific authentication checks. Access checks will always be
+ *  made.
  */
-function services_method_call($method_name, $args = array(), $browsing = FALSE) {
-  $info = services_get_server_info();
-  $context = services_get_context($info->context);
-  if (is_array($method_name) && isset($method_name['#callback'])) {
-    $method = $method_name;
-  }
-  else {
-    $method = services_method_get($method_name);
-  }
-
-  // Check that method exists.
-  if (empty($method)) {
-    return services_error(t('Method %name does not exist', array('%name' => $method_name)), 406);
-  }
-
-  // Check for missing args
+function services_controller_execute($controller, $args = array(), $options=array()) {
+  // Check for missing arguments.
   $hash_parameters = array();
-  foreach ($method['#args'] as $key => $arg) {
+  foreach ($controller['#args'] as $key => $arg) {
     if (!$arg['#optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {
         return services_error(t('Missing required argument !name.', array(
@@ -344,24 +423,24 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   }
 
   // Check authentication
-  if ($auth_error = services_auth_invoke_custom($context['authentication'], 'authenticate_call', $method, $method_name, $args)) {
-    if ($browsing) {
-      drupal_set_message(t('Authentication failed: !message', array('!message' => $auth_error)), 'error');
-    }
-    else {
+  if (!(isset($options['skip_authentication']) || !$options['skip_authentication'])) {
+    $context_name = services_get_server_info('context');
+    $context = services_get_context($context_name);
+
+    if ($auth_error = services_auth_invoke_custom($context['authentication'], 'authenticate_call', $controller, $args)) {
       return services_error($auth_error, 401);
     }
   }
 
   // Load the proper file
-  if ($file = $method['#file']) {
+  if ($file = $controller['#file']) {
     module_load_include($file['file'], $file['module']);
   }
 
   // Construct access arguments array
-  if (isset($method['#access arguments'])) {
-    $access_arguments = $method['#access arguments'];
-    if (isset($method['#access arguments append']) && $method['#access arguments append']) {
+  if (isset($controller['#access arguments'])) {
+    $access_arguments = $controller['#access arguments'];
+    if (isset($controller['#access arguments append']) && $controller['#access arguments append']) {
       $access_arguments[] = $args;
     }
   }
@@ -371,18 +450,21 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   }
 
   // Call default or custom access callback
-  if (call_user_func_array($method['#access callback'], $access_arguments) != TRUE) {
+  if (call_user_func_array($controller['#access callback'], $access_arguments) != TRUE) {
     return services_error(t('Access denied'), 401);
   }
 
   // Change working directory to drupal root to call drupal function,
   // then change it back to server module root to handle return.
   $server_root = getcwd();
-  $server_info = services_get_server_info();
-  if ($server_info) {
-    chdir($server_info->drupal_path);
+  $drupal_path = services_get_server_info('drupal_path');
+  if ($drupal_path) {
+    chdir($drupal_path);
   }
-  $result = call_user_func_array($method['#callback'], $args);
+
+  // Execute the controller callback
+  $result = call_user_func_array($controller['#callback'], $args);
+
   if ($server_info) {
     chdir($server_root);
   }
@@ -391,28 +473,8 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
 }
 
 /**
- * Registers a callback for formatting resource uri's.
- * Use parameterless call to get the current formatter callback.
- *
- * @param mixed $callback
- *  Optional. The callaback to register for uri formatting. No changes are made
- *  if this parameter is omitted or NULL.
- * @return mixed
- *  Returns the registered callback for resource uri formatting
- */
-function services_resource_uri_formatter($callback = NULL) {
-  static $formatter;
-
-  if ($callback !== NULL) {
-    $formatter = $callback;
-  }
-
-  return $formatter;
-}
-
-/**
  * Formats a resource uri using the formatter registered through
- * services_resource_uri_formatter().
+ * services_set_server_info().
  *
  * @param array $path
  *  An array of strings containing the component parts of the path to the resource.
@@ -420,7 +482,7 @@ function services_resource_uri_formatter($callback = NULL) {
  *  Returns the formatted resource uri, or NULL if no formatter has been registered.
  */
 function services_resource_uri($path) {
-  $formatter = services_resource_uri_formatter();
+  $formatter = services_get_server_info('resource_uri_formatter');
   if ($formatter) {
     return call_user_func($formatter, $path);
   }
@@ -727,18 +789,6 @@ function _services_process_resource($name, &$resource, &$controllers) {
       $controllers[$name . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
     }
   }
-}
-
-function services_delegate_access($perm) {
-  return services_auth_invoke('delegate_access', $perm);
-}
-
-/**
- * Menu wildcard loader for browsing Service methods.
- */
-function services_method_load($method) {
-  $method = services_method_get($method);
-  return isset($method) ? $method : FALSE;
 }
 
 function services_method_get($method_name, $context='') {

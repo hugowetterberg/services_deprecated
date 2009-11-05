@@ -12,7 +12,7 @@
  *  Returns nothing, or a error message if authentication fails
  */
 function _services_oauth_authenticate_call($method, $args) {
-  $context = $method['#context'];
+  $context = $method['context'];
   $cred = isset($context['oauth_credentials']) ? $context['oauth_credentials'] : 'token';
   $auth_level = isset($context['oauth_authorization']) ? $context['oauth_authorization'] : '*';
 
@@ -24,8 +24,8 @@ function _services_oauth_authenticate_call($method, $args) {
   try {
     module_load_include('inc', 'oauth_common');
 
-    $info = services_get_server_info();
-    $service_context = services_get_context($info->context);
+    $context_name = services_get_server_info('context');
+    $service_context = services_get_context($context_name);
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
     if (!$signed && ($cred=='consumer' || $cred=='token')) {
@@ -55,6 +55,10 @@ function _services_oauth_authenticate_call($method, $args) {
         throw new OAuthException('The consumer is not authorized to access this service');
       }
     }
+
+    // Add the oauth authentication info to server info
+    services_set_server_info('oauth_consumer', $consumer);
+    services_set_server_info('oauth_token', $token);
 
     // Load the user if the request was authenticated using a token
     // that's associated with a account.
@@ -88,77 +92,4 @@ function _services_oauth_security_settings($settings) {
   }
 
   return $form;
-}
-
-/**
- * Alters the methods so that they fit the needs of the OAuth authentication module.
- * This is also where the authentication and authorization levels that are configured
- * in the administration interface are configured.
- *
- * @param array $methods
- * @return void
- */
-function _services_oauth_alter_methods(&$methods) {
-  $auth = variable_get('services_oauth_authentication_levels', array());
-  $authorization = variable_get('services_oauth_authorization_settings', array());
-  $autho_levels = oauth_common_authorization_levels();
-
-  foreach ($methods as $key => &$method) {
-    // Old-style methods only have a numeric index, take the method
-    // name as key instead.
-    if (is_numeric($key) && isset($method['#method'])) {
-      $key = $method['#method'];
-    }
-
-    if (!isset($method[$key]['#auth'])) {
-      $method['#auth'] = TRUE;
-    }
-
-    if (!isset($method[$key]['#key'])) {
-      $method['#key'] = TRUE;
-    }
-
-    if (!isset($method['#verify_key'])) {
-      $method['#verify_key'] = TRUE;
-    }
-
-    // Apply custom authorization level settings
-    if (isset($authorization[$key])) {
-      if (isset($autho_levels[$authorization[$key]])) {
-        $method['#authorization level'] = $authorization[$key];
-      }
-      else {
-        $method['#authorization level'] = '*';
-      }
-    }
-    if (!isset($method['#authorization level'])) {
-      $method['#authorization level'] = '*';
-    }
-
-    // Check if we got custom settings for the method's authentication
-    if (isset($auth[$key])) {
-      switch ($auth[$key]) {
-        case 'none':
-          $method['#verify_key'] = FALSE;
-          $method['#key'] = FALSE;
-          $method['#auth'] = FALSE;
-        break;
-        case 'unsigned_consumer':
-          $method['#verify_key'] = FALSE;
-          $method['#key'] = TRUE;
-          $method['#auth'] = FALSE;
-        break;
-        case 'consumer':
-          $method['#verify_key'] = TRUE;
-          $method['#key'] = TRUE;
-          $method['#auth'] = FALSE;
-        break;
-        case 'token':
-          $method['#verify_key'] = TRUE;
-          $method['#key'] = TRUE;
-          $method['#auth'] = TRUE;
-        break;
-      }
-    }
-  }
 }

@@ -9,9 +9,7 @@ function services_oauth_authentication_info() {
     '#file' => 'services_oauth.inc',
     '#title' => t('OAuth authentication'),
     '#description' => t('An open protocol to allow secure API authorization'),
-    '#context_aware' => TRUE,
     'security_settings' => '_services_oauth_security_settings',
-    'alter_methods' => '_services_oauth_alter_methods',
     'authenticate_call' => '_services_oauth_authenticate_call',
   );
 }

@@ -14,7 +14,7 @@
  * @return void
  */
 function _services_oauth_admin_authentication_options(&$element, $controller, $auth_levels) {
-  $context = $controller['#context'];
+  $context = $controller['context'];
   $element['oauth_credentials'] = array(
     '#type' => 'select',
     '#title' => t('Required authentication'),
@@ -25,13 +25,13 @@ function _services_oauth_admin_authentication_options(&$element, $controller, $a
       'consumer' => t('Consumer key'),
       'token' => t('Consumer key and access token'),
     ),
-    '#default_value' => $context['oauth_credentials'],
+    '#default_value' => !empty($context['oauth_credentials']) ? $context['oauth_credentials'] : 'token',
   );
 
   $element['oauth_authorization'] = array(
     '#type' => 'select',
     '#title' => t('Required authorization'),
     '#options' => $auth_levels,
-    '#default_value' => $context['oauth_authorization'],
+    '#default_value' => !empty($context['oauth_authorization']) ? $context['oauth_authorization'] : '*',
   );
 }

@@ -167,7 +167,7 @@ function services_admin_context_resources($form_state, $context_name) {
   );
 
   foreach ($resources as $name => $resource) {
-    $rc = $resource['#context'];
+    $rc = $resource['context'];
     $res_set = array(
       '#type' => 'fieldset',
       '#title' => t('!name resource', array(
@@ -327,7 +327,7 @@ function _services_resource_operation_settings(&$settings, $context, $resource, 
     $settings['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enabled'),
-      '#default_value' => !empty($rop['#context']),
+      '#default_value' => !empty($rop['context']) && $rop['context']['enabled'],
     );
 
     if ($rop['context']['preprocess']) {

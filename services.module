@@ -699,7 +699,7 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
       $crud = array('create', 'retrieve', 'update', 'delete', 'index');
       foreach ($crud as $op) {
         $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
-        $resource['' . $op]['context'] = $cop;
+        $resource[$op]['context'] = $cop;
         if ($strict && empty($cop)) {
           unset($resource['' . $op]);
         }
@@ -707,8 +707,8 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
 
       $classes = array('targeted actions', 'actions', 'relationships');
       foreach ($classes as $class) {
-        if (!empty($resource['' . $class])) {
-          foreach ($resource['' . $class] as $op => $def) {
+        if (!empty($resource[$class])) {
+          foreach ($resource[$class] as $op => $def) {
             $cop = isset($cres[$class][$op]) ? $cres[$class][$op] : array();
             if (empty($cop)) {
               if ($strict) {
@@ -716,7 +716,7 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
               }
             }
             else {
-              $resource['' . $class][$op]['context'] = $cop;
+              $resource[$class][$op]['context'] = $cop;
             }
           }
         }

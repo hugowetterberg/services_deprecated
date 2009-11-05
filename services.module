@@ -380,7 +380,7 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
   // Get information about the auth module
   $func = services_auth_info($method, $module);
   if ($func) {
-    if ($file = services_auth_info('file', $module)) {
+    if ($file = services_auth_info('#file', $module)) {
       require_once(drupal_get_path('module', $module) . '/' . $file);
     }
 

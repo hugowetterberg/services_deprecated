@@ -194,7 +194,7 @@ function services_admin_context_resources($form_state, $context_name) {
       '#tree' => TRUE,
     );
     foreach ($ops as $op => $title) {
-      if (isset($resource['#' . $op])) {
+      if (isset($resource[$op])) {
         $res_set['operations'][$op] = array(
           '#type' => 'fieldset',
           '#title' => $title,
@@ -223,12 +223,6 @@ function services_admin_context_resources($form_state, $context_name) {
     }
 
     drupal_alter('services_resource_settings', $res_set, $resource);
-
-    // $res_set['dmp'] = array(
-    //   '#prefix' => '<pre>',
-    //   '#suffix' => '</pre>',
-    //   '#value' => var_export($resource, TRUE),
-    // );
 
     $res[$name] = $res_set;
   }
@@ -304,8 +298,8 @@ function services_admin_context_resources_submit($form, $form_state) {
 function get_resource_operation_info($resource, $class, $name=NULL) {
   $op = NULL;
 
-  if (isset($resource['#' . $class])) {
-    $op = $resource['#' . $class];
+  if (isset($resource[$class])) {
+    $op = $resource[$class];
     if (!empty($name)) {
       $op = isset($op[$name]) ? $op[$name] : NULL;
     }
@@ -336,19 +330,19 @@ function _services_resource_operation_settings(&$settings, $context, $resource, 
       '#default_value' => !empty($rop['#context']),
     );
 
-    if ($rop['#context']['preprocess']) {
+    if ($rop['context']['preprocess']) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Preprocess function'),
-        '#value' => $rop['#context']['preprocess'],
+        '#value' => $rop['context']['preprocess'],
       );
     }
 
-    if ($rop['#context']['postprocess']) {
+    if ($rop['context']['postprocess']) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Postprocess function'),
-        '#value' => $rop['#context']['Postprocess'],
+        '#value' => $rop['context']['Postprocess'],
       );
     }
 

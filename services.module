@@ -360,7 +360,7 @@ function services_auth_invoke($method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NU
   // Get information about the current auth module
   $func = services_auth_info($method, $module);
   if ($func) {
-    if ($file = services_auth_info('#file')) {
+    if ($file = services_auth_info('file')) {
       require_once(drupal_get_path('module', $module) . '/' . $file);
     }
 
@@ -380,7 +380,7 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
   // Get information about the auth module
   $func = services_auth_info($method, $module);
   if ($func) {
-    if ($file = services_auth_info('#file', $module)) {
+    if ($file = services_auth_info('file', $module)) {
       require_once(drupal_get_path('module', $module) . '/' . $file);
     }
 
@@ -412,8 +412,8 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
 function services_controller_execute($controller, $args = array(), $options=array()) {
   // Check for missing arguments.
   $hash_parameters = array();
-  foreach ($controller['#args'] as $key => $arg) {
-    if (!$arg['#optional']) {
+  foreach ($controller['args'] as $key => $arg) {
+    if (!$arg['optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {
         return services_error(t('Missing required argument !name.', array(
           '!name' => $key,
@@ -433,14 +433,14 @@ function services_controller_execute($controller, $args = array(), $options=arra
   }
 
   // Load the proper file
-  if ($file = $controller['#file']) {
+  if ($file = $controller['file']) {
     module_load_include($file['file'], $file['module']);
   }
 
   // Construct access arguments array
-  if (isset($controller['#access arguments'])) {
-    $access_arguments = $controller['#access arguments'];
-    if (isset($controller['#access arguments append']) && $controller['#access arguments append']) {
+  if (isset($controller['access arguments'])) {
+    $access_arguments = $controller['access arguments'];
+    if (isset($controller['access arguments append']) && $controller['access arguments append']) {
       $access_arguments[] = $args;
     }
   }
@@ -450,7 +450,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
   }
 
   // Call default or custom access callback
-  if (call_user_func_array($controller['#access callback'], $access_arguments) != TRUE) {
+  if (call_user_func_array($controller['access callback'], $access_arguments) != TRUE) {
     return services_error(t('Access denied'), 401);
   }
 
@@ -463,7 +463,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
   }
 
   // Execute the controller callback
-  $result = call_user_func_array($controller['#callback'], $args);
+  $result = call_user_func_array($controller['callback'], $args);
 
   if ($server_info) {
     chdir($server_root);
@@ -641,8 +641,8 @@ function services_get_all_resources($context_name=NULL) {
 
     // Make sure that we got a access callback for all resources
     foreach ($controllers as &$controller) {
-      if (!isset($controller['#access callback'])) {
-        $controller['#access callback'] = 'services_access_menu';
+      if (!isset($controller['access callback'])) {
+        $controller['access callback'] = 'services_access_menu';
       }
     }
 
@@ -659,8 +659,8 @@ function services_get_all_resources($context_name=NULL) {
       if (!empty($context))
       $aliased = array();
       foreach ($resources as $key => $def) {
-        if (!empty($def['#context']['alias'])) {
-          $aliased[$def['#context']['alias']] = $def;
+        if (!empty($def['context']['alias'])) {
+          $aliased[$def['context']['alias']] = $def;
         }
         else {
           $aliased[$key] = $def;
@@ -677,7 +677,7 @@ function services_get_all_resources($context_name=NULL) {
 /**
  * Applies the context to a set of resources. Resources and controllers that
  * aren't supported will be removed (if $strict is set to TRUE) and both
- * resources and controllers will get the '#context' attribute set.
+ * resources and controllers will get the 'context' attribute set.
  *
  * @param array $resources
  *  An array of resources that the context should be applied on.
@@ -690,7 +690,7 @@ function services_get_all_resources($context_name=NULL) {
 function services_apply_context(&$resources, $context, $strict=TRUE) {
   foreach ($resources as $name => &$resource) {
     $cres = $context && isset($context['resources'][$name]) ? $context['resources'][$name] : array();
-    $resource['#context'] = $cres;
+    $resource['context'] = $cres;
 
     if ($strict && empty($cres)) {
       unset($resources[$name]);
@@ -699,24 +699,24 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
       $crud = array('create', 'retrieve', 'update', 'delete', 'index');
       foreach ($crud as $op) {
         $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
-        $resource['#' . $op]['#context'] = $cop;
+        $resource['' . $op]['context'] = $cop;
         if ($strict && empty($cop)) {
-          unset($resource['#' . $op]);
+          unset($resource['' . $op]);
         }
       }
 
       $classes = array('targeted actions', 'actions', 'relationships');
       foreach ($classes as $class) {
-        if (!empty($resource['#' . $class])) {
-          foreach ($resource['#' . $class] as $op => $def) {
+        if (!empty($resource['' . $class])) {
+          foreach ($resource['' . $class] as $op => $def) {
             $cop = isset($cres[$class][$op]) ? $cres[$class][$op] : array();
             if (empty($cop)) {
               if ($strict) {
-                unset($resource['#' . $op]);
+                unset($resource['' . $op]);
               }
             }
             else {
-              $resource['#' . $class][$op]['#context'] = $cop;
+              $resource['' . $class][$op]['context'] = $cop;
             }
           }
         }
@@ -744,54 +744,54 @@ function services_process_resources(&$resources, &$controllers, $path=array()) {
  * @return void
  */
 function _services_process_resource($name, &$resource, &$controllers) {
-  $resource['#name'] = $name;
+  $resource['name'] = $name;
 
-  $keys = array('#retrieve','#create','#update','#delete');
+  $keys = array('retrieve','create','update','delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
       $controllers[$name . '/' . $key] = &$resource[$key];
     }
   }
 
-  if (isset($resource['#index'])) {
-    $controllers[$name . '/#index'] = &$resource['#index'];
+  if (isset($resource['index'])) {
+    $controllers[$name . '/index'] = &$resource['index'];
   }
 
-  if (isset($resource['#relationships'])) {
-    foreach ($resource['#relationships'] as $relname => $rel) {
+  if (isset($resource['relationships'])) {
+    foreach ($resource['relationships'] as $relname => $rel) {
       // Run some inheritance logic
-      if (isset($resource['#retrieve'])) {
-        if (empty($rel['#args']) || $rel['#args'][0]['#name'] !== $resource['#retrieve']['#args'][0]['#name']) {
-          array_unshift($rel['#args'], $resource['#retrieve']['#args'][0]);
+      if (isset($resource['retrieve'])) {
+        if (empty($rel['args']) || $rel['args'][0]['name'] !== $resource['retrieve']['args'][0]['name']) {
+          array_unshift($rel['args'], $resource['retrieve']['args'][0]);
         }
-        $resource['#relationships'][$relname] = array_merge($resource['#retrieve'], $rel);
+        $resource['relationships'][$relname] = array_merge($resource['retrieve'], $rel);
       }
-      $controllers[$name . '/relationship/' . $relname] = &$resource['#relationships'][$relname];
+      $controllers[$name . '/relationship/' . $relname] = &$resource['relationships'][$relname];
     }
   }
 
-  if (isset($resource['#actions'])) {
-    foreach ($resource['#actions'] as $actname => $act) {
+  if (isset($resource['actions'])) {
+    foreach ($resource['actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['#update'])) {
-        $up = $resource['#update'];
-        unset($up['#args']);
-        $resource['#actions'][$actname] = array_merge($up, $act);
+      if (isset($resource['update'])) {
+        $up = $resource['update'];
+        unset($up['args']);
+        $resource['actions'][$actname] = array_merge($up, $act);
       }
-      $controllers[$name . '/action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$name . '/action/' . $actname] = &$resource['actions'][$actname];
     }
   }
 
-  if (isset($resource['#targeted actions'])) {
-    foreach ($resource['#targeted actions'] as $actname => $act) {
+  if (isset($resource['targeted actions'])) {
+    foreach ($resource['targeted actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['#update'])) {
-        if (empty($act['#args']) || $act['#args'][0]['#name'] !== $resource['#update']['#args'][0]['#name']) {
-          array_unshift($act['#args'], $resource['#update']['#args'][0]);
+      if (isset($resource['update'])) {
+        if (empty($act['args']) || $act['args'][0]['name'] !== $resource['update']['args'][0]['name']) {
+          array_unshift($act['args'], $resource['update']['args'][0]);
         }
-        $resource['#targeted actions'][$actname] = array_merge($resource['#update'], $act);
+        $resource['targeted actions'][$actname] = array_merge($resource['update'], $act);
       }
-      $controllers[$name . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$name . '/targeted_action/' . $actname] = &$resource['actions'][$actname];
     }
   }
 }

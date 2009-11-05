@@ -12,7 +12,7 @@ function node_resource_autoload_info() {
   );
 }
 
-function node_resource_service_resource() {
+function node_resource_services_resources() {
   return array(
     'node' => array(
       'file' => array('file' => 'inc', 'module' => 'node_resource'),

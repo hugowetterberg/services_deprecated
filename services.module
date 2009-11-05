@@ -611,24 +611,20 @@ function _services_context_from_result($row) {
 /**
  * Gets all resource definitions.
  *
- * @param bool $include_resources
- *   Optional. When TRUE resource-based service definitions will be translated to
- *   the appropriat method callas and included in the service listing.
- *   Defaults to TRUE.
  * @param string $context_name
- *   Optional. The endpoint context that's being used. Defaults to ''.
+ *   Optional. The endpoint context that's being used. Defaults to NULL.
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($include_services = TRUE, $context_name = '') {
-  $cache_key = 'services:' . $context_name . ':resources' . ($include_services?'_with_services':'');
+function services_get_all_resources($context_name=NULL) {
+  $cache_key = empty($context_name) ? 'services:resources' : 'services:' . $context_name . ':resources';
 
   if (($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
     // Get all installed resources
-    $resources = module_invoke_all('service_resource');
+    $resources = module_invoke_all('services_resources');
 
     $context = NULL;
     if (!empty($context_name)) {
@@ -638,31 +634,40 @@ function services_get_all_resources($include_services = TRUE, $context_name = ''
       services_apply_context($resources, $context, TRUE);
     }
 
-    drupal_alter('service_resources', $resources, $context);
+    drupal_alter('services_resources', $resources, $context);
 
     $controllers = array();
     services_process_resources($resources, $controllers);
 
+    // Make sure that we got a access callback for all resources
     foreach ($controllers as &$controller) {
       if (!isset($controller['#access callback'])) {
         $controller['#access callback'] = 'services_access_menu';
       }
     }
 
-    drupal_alter('service_resources_post_processing', $resources, $context);
-    services_auth_invoke('alter_methods', $controllers, $context);
+    drupal_alter('services_resources_post_processing', $resources, $context);
 
-    $aliased = array();
-    // Apply any aliases from context
-    foreach ($resources as $key => $def) {
-      if (!empty($def['#context']['alias'])) {
-        $aliased[$def['#context']['alias']] = $def;
+    // Do some context-dependent processing
+    if ($context) {
+      // Let the authentication module alter our controllers
+      if (!empty($context['authentication'])) {
+        services_auth_invoke_custom($context['authentication'], 'alter_controllers', $controllers, $context);
       }
-      else {
-        $aliased[$key] = $def;
+
+      // Apply any aliases from context
+      if (!empty($context))
+      $aliased = array();
+      foreach ($resources as $key => $def) {
+        if (!empty($def['#context']['alias'])) {
+          $aliased[$def['#context']['alias']] = $def;
+        }
+        else {
+          $aliased[$key] = $def;
+        }
       }
+      $resources = $aliased;
     }
-    $resources = $aliased;
 
     cache_set($cache_key, $resources);
     return $resources;

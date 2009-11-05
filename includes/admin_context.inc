@@ -159,7 +159,7 @@ function services_admin_context_resources($form_state, $context_name) {
     'index' => t('Index'),
   );
 
-  $resources = services_get_all_resources(TRUE);
+  $resources = services_get_all_resources();
   services_apply_context($resources, $context, FALSE);
 
   $res = array(

@@ -302,7 +302,7 @@ function services_server_info($reset = FALSE) {
   if (!$info) {
     $info = new stdClass();
   }
-  return &$info;
+  return $info;
 }
 
 /**

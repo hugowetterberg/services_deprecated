@@ -12,29 +12,29 @@
 function services_schema() {
   $schema = array();
 
-  $schema['services_context'] = array(
-    'description' => 'Stores context information for services',
+  $schema['services_endpoint'] = array(
+    'description' => 'Stores endpoint information for services',
     'fields' => array(
-      'context' => array(
-        'description' => 'The name of the context.',
+      'endpoint' => array(
+        'description' => 'The name of the endpoint.',
         'type'        => 'varchar',
         'length'      => 255,
         'not null'    => TRUE,
       ),
       'title' => array(
-        'description' => 'The title of the context.',
+        'description' => 'The title of the endpoint.',
         'type'        => 'varchar',
         'length'      => 255,
         'not null'    => TRUE,
       ),
       'enabled'       => array(
-        'description' => 'Whether the the context is enabled or not',
+        'description' => 'Whether the the endpoint is enabled or not',
         'type'        => 'int',
         'size'        => 'tiny',
         'default'     => 1,
       ),
       'server' => array(
-        'description' => 'The name of the server used in this context.',
+        'description' => 'The name of the server used in this endpoint.',
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
@@ -46,7 +46,7 @@ function services_schema() {
         'not null'    => TRUE,
       ),
       'authentication' => array(
-        'description' => 'The authentication module used in this context.',
+        'description' => 'The authentication module used in this endpoint.',
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
@@ -59,12 +59,12 @@ function services_schema() {
         'default'     => '',
       ),
       'resources' => array(
-        'description' => 'Information about the resources exposed in this context, serialized as JSON.',
+        'description' => 'Information about the resources exposed in this endpoint, serialized as JSON.',
         'type'        => 'text',
         'not null'    => TRUE,
       ),
     ),
-    'primary key' => array('context'),
+    'primary key' => array('endpoint'),
   );
 
   return $schema;
@@ -146,7 +146,7 @@ function services_update_6002() {
 }
 
 /**
- * Update 6200 adds the concept of contexts which is a way to expose a
+ * Update 6200 adds the concept of endpoints which is a way to expose a
  * specific server using a specific authentication method, with the full set
  * or a subset of the installed services.
  *
@@ -157,30 +157,30 @@ function services_update_6002() {
  *
  * As with most major changes, this is a _breaking_ update, in the sense that
  * you will need to reconfigure services. If you have clients that expect the
- * endpoint to remain the same you can easily set up a context that exposes
+ * endpoint to remain the same you can easily set up a endpoint that exposes
  * your server/authentication method/services set on the old
  * 'services/[server path]' path.
  */
-function services_update_6200() {
+function services_update_6300() {
   $ret = array();
 
-  db_create_table($ret, 'services_context', array(
-    'description' => 'Stores context information for services',
+  db_create_table($ret, 'services_endpoint', array(
+    'description' => 'Stores endpoint information for services',
     'fields' => array(
-      'context' => array(
-        'description' => 'The name of the context.',
+      'endpoint' => array(
+        'description' => 'The name of the endpoint.',
         'type'        => 'varchar',
         'length'      => 255,
         'not null'    => TRUE,
       ),
       'enabled'       => array(
-        'description' => 'Whether the the context is enabled or not',
+        'description' => 'Whether the the endpoint is enabled or not',
         'type'        => 'int',
         'size'        => 'tiny',
         'default'     => 1,
       ),
       'server' => array(
-        'description' => 'The name of the server used in this context.',
+        'description' => 'The name of the server used in this endpoint.',
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
@@ -192,7 +192,7 @@ function services_update_6200() {
         'not null'    => TRUE,
       ),
       'authentication' => array(
-        'description' => 'The authentication module used in this context.',
+        'description' => 'The authentication module used in this endpoint.',
         'type'        => 'varchar',
         'length'      => 32,
         'not null'    => TRUE,
@@ -205,12 +205,12 @@ function services_update_6200() {
         'default'     => '',
       ),
       'resources' => array(
-        'description' => 'Information about the resources exposed in this context, serialized as JSON.',
+        'description' => 'Information about the resources exposed in this endpoint, serialized as JSON.',
         'type'        => 'text',
         'not null'    => TRUE,
       ),
     ),
-    'primary key' => array('context'),
+    'primary key' => array('endpoint'),
   ));
 
   // Remove the auth_module variable as this won't be handled on a global basis anymore

@@ -2,10 +2,10 @@
 // $Id$
 drupal_add_css(drupal_get_path('module', 'services') . '/css/admin.css');
 ?>
-<?php foreach ($contexts as $name => $info): ?>
-  <div class="services-context">
+<?php foreach ($endpoints as $name => $info): ?>
+  <div class="services-endpoint">
     <h2><?php print $info['title'] ?></h2>
-    <div class="context-info first">
+    <div class="endpoint-info first">
       <div class="info">
         <label><?php print t('Path') ?></label>
         <span class="value"><?php print $info['path'] ?></span>
@@ -19,7 +19,7 @@ drupal_add_css(drupal_get_path('module', 'services') . '/css/admin.css');
         <span class="value"><?php print $info['authentication'] ?></span>
       </div>
     </div>
-    <div class="context-info last">
+    <div class="endpoint-info last">
       <div class="info">
         <label><?php print t('Services') ?></label>
         <span class="value">
@@ -45,8 +45,8 @@ drupal_add_css(drupal_get_path('module', 'services') . '/css/admin.css');
     </div>
     <?php
       print l(t('Edit !title', array('!title' => $info['title'],)), 
-        'admin/build/services/contexts/' . $name,
-        array('attributes' => array('class' => 'edit-context'))
+        'admin/build/services/endpoints/' . $name,
+        array('attributes' => array('class' => 'edit-endpoint'))
       );
     ?>
   </div>

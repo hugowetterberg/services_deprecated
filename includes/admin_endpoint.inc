@@ -1,51 +1,96 @@
 <?php
 // $Id$
 
-function services_admin_context_index() {
-  return theme('services_context_index', services_get_contexts());
+function services_admin_endpoint_index() {
+  return theme('services_endpoint_index', services_get_endpoints());
 }
 
-function services_admin_context_add($form_state) {
-  return _services_admin_context_form();
+function services_admin_endpoint_add($form_state) {
+  return _services_admin_endpoint_form();
 }
 
-function services_admin_context_edit($form_state, $context_name) {
-  return _services_admin_context_form($context_name);
+function services_admin_endpoint_add_validate($form, $form_state) {
+  $values = $form_state['values'];
+  if (!preg_match('/^[a-z-]+$/', $values['endpoint'])) {
+    form_set_error("endpoint", t("The machine readable name may only contain lower case a-z and dashes."));
+  }
 }
 
-function _services_admin_context_form($context_name=NULL) {
-  if (!empty($context_name)) {
-    $context = services_get_context($context_name);
+function services_admin_endpoint_add_submit($form, $form_state) {
+  $values = $form_state['values'];
+  $values['authentication_settings'] = $values['authentication_settings']['settings'];
+  $endpoint = array(
+    'resources' => array(),
+  );
+
+  foreach (element_children($form) as $name) {
+    $info = $form[$name];
+    if (isset($info['#endpoint_attribute']) && $info['#endpoint_attribute']) {
+      $endpoint[$name] = $values[$name];
+    }
+  }
+
+  services_write_endpoint($endpoint);
+  drupal_set_message('The endpoint has been created', 'info');
+  drupal_goto(sprintf('admin/build/services/endpoints/%s/resources', $endpoint['endpoint']));
+}
+
+function services_admin_endpoint_edit($form_state, $endpoint_name) {
+  return _services_admin_endpoint_form($endpoint_name);
+}
+
+function services_admin_endpoint_edit_submit($form, $form_state) {
+  $values = $form_state['values'];
+  $values['authentication_settings'] = $values['authentication_settings']['settings'];
+  $endpoint = services_get_endpoint($values['endpoint']);
+
+  foreach (element_children($form) as $name) {
+    $info = $form[$name];
+    if (isset($info['#endpoint_attribute']) && $info['#endpoint_attribute']) {
+      $endpoint[$name] = $values[$name];
+    }
+  }
+
+  drupal_set_message('The endpoint has been updated', 'info');
+  services_write_endpoint($endpoint);
+}
+
+function _services_admin_endpoint_form($endpoint_name=NULL) {
+  if (!empty($endpoint_name)) {
+    $endpoint = services_get_endpoint($endpoint_name);
   }
   else {
-    $context = array();
+    $endpoint = array();
   }
   $form = array();
 
-  if (!empty($context_name)) {
-    $form['context'] = array(
+  if (!empty($endpoint_name)) {
+    $form['endpoint'] = array(
       '#type' => 'value',
-      '#value' => $context_name,
+      '#value' => $endpoint_name,
     );
   }
   else {
-    // TODO: Allow renaming of context that aren't defined in code?
-    $form['context'] = array(
+    // TODO: Allow renaming of endpoint that aren't defined in code?
+    $form['endpoint'] = array(
       '#type' => 'textfield',
-      '#title' => t('Context name'),
+      '#title' => t('Endpoint name'),
       '#default_value' => '',
-      '#description' => t('The machine-readable name of your context'),
+      '#description' => t('The machine-readable name of your endpoint'),
+      '#endpoint_attribute' => TRUE,
+      '#required' => TRUE,
     );
   }
 
   $form['title'] = array(
     '#type' => 'textfield',
-    '#title' => t('Context title'),
-    '#description' => t('The title for your context.'),
-    '#default_value' => $context['title'],
+    '#title' => t('Endpoint title'),
+    '#description' => t('The title for your endpoint.'),
+    '#default_value' => $endpoint['title'],
     '#size' => 40,
     '#maxlength' => 255,
-    '#context_attribute' => TRUE,
+    '#required' => TRUE,
+    '#endpoint_attribute' => TRUE,
   );
 
   $servers = services_get_servers();
@@ -58,21 +103,23 @@ function _services_admin_context_form($context_name=NULL) {
   $form['server'] = array(
     '#type' => 'select',
     '#title' => t('Server'),
-    '#description' => t('Select a server that should be used in this context'),
+    '#description' => t('Select a server that should be used in this endpoint'),
     '#options' => $server_opts,
-    '#default_value' => $context['server'],
-    '#context_attribute' => TRUE,
+    '#default_value' => $endpoint['server'],
+    '#endpoint_attribute' => TRUE,
+    '#required' => TRUE,
   );
 
 
   $form['path'] = array(
     '#type' => 'textfield',
-    '#title' => t('Path to server endpoint'),
-    '#description' => t('This is the endpoint for your server.'),
-    '#default_value' => $context['path'],
+    '#title' => t('Path to endpoint'),
+    '#description' => t('This is the path to your endpoint.'),
+    '#default_value' => $endpoint['path'],
     '#size' => 40,
     '#maxlength' => 255,
-    '#context_attribute' => TRUE,
+    '#required' => TRUE,
+    '#endpoint_attribute' => TRUE,
   );
 
   $auth_modules = module_implements('authentication_info');
@@ -85,11 +132,11 @@ function _services_admin_context_form($context_name=NULL) {
   $form['authentication'] = array(
     '#type' => 'select',
     '#title' => t('Authentication module'),
-    '#description' => t('The authentication module determines what authentication scheme should be used with your service. If no authentication module is configured the standard session handling will be used.'),
+    '#description' => t('The authentication module determines what authentication scheme should be used with your endpoint. If no authentication module is configured the standard session handling will be used.'),
     '#options' => $auth_options,
     '#required' => FALSE,
-    '#default_value' => array($context['authentication']),
-    '#context_attribute' => TRUE,
+    '#default_value' => array($endpoint['authentication']),
+    '#endpoint_attribute' => TRUE,
     '#ahah' => array(
       'path' => 'admin/services/ahah/security-options',
       'wrapper' => 'security-module-options',
@@ -103,17 +150,17 @@ function _services_admin_context_form($context_name=NULL) {
     '#prefix' => '<div id="security-module-options">',
     '#suffix' => '</div>',
     '#tree'   => TRUE,
-    '#context_attribute' => TRUE,
+    '#endpoint_attribute' => TRUE,
     'settings' => array(
       '#value' => sprintf('<div class="description">%s</div>',
         // TODO: Make sure that we fall back to using sessions. No 401 plz
-        t('Select a authentication module to configure security. Contexts without a configured security module will use standard Drupal sessions - which might be suitable for services consumed by JavaScript and Flash movies on the local site.')),
+        t('Select a authentication module to configure security. endpoints without a configured security module will use standard Drupal sessions - which might be suitable for services consumed by JavaScript and Flash movies on the local site.')),
     ),
   );
 
   // Get the configuration form for the authorization module
-  if (!empty($context['authentication'])) {
-    $settings = services_auth_invoke_custom($context['authentication'], 'security_settings', $context['authentication_settings']);
+  if (!empty($endpoint['authentication'])) {
+    $settings = services_auth_invoke_custom($endpoint['authentication'], 'security_settings', $endpoint['authentication_settings']);
     if (is_array($settings)) {
       $form['authentication_settings']['settings'] = $settings;
     }
@@ -127,28 +174,13 @@ function _services_admin_context_form($context_name=NULL) {
   return $form;
 }
 
-function services_admin_context_edit_submit($form, $form_state) {
-  $values = $form_state['values'];
-  $values['authentication_settings'] = $values['authentication_settings']['settings'];
-  $context = services_get_context($values['context']);
-
-  foreach (element_children($form) as $name) {
-    $info = $form[$name];
-    if (isset($info['#context_attribute']) && $info['#context_attribute']) {
-      $context[$name] = $values[$name];
-    }
-  }
-
-  services_write_context($context);
-}
-
-function services_admin_context_resources($form_state, $context_name) {
-  $context = services_get_context($context_name);
+function services_admin_endpoint_resources($form_state, $endpoint_name) {
+  $endpoint = services_get_endpoint($endpoint_name);
   $form = array();
 
-  $form['context_name'] = array(
+  $form['endpoint_name'] = array(
     '#type' => 'value',
-    '#value' => $context_name
+    '#value' => $endpoint_name
   );
 
   $ops = array(
@@ -160,14 +192,14 @@ function services_admin_context_resources($form_state, $context_name) {
   );
 
   $resources = services_get_all_resources();
-  services_apply_context($resources, $context, FALSE);
+  services_apply_endpoint($resources, $endpoint, FALSE);
 
   $res = array(
     '#tree' => TRUE,
   );
 
   foreach ($resources as $name => $resource) {
-    $rc = $resource['context'];
+    $rc = $resource['endpoint'];
     $res_set = array(
       '#type' => 'fieldset',
       '#title' => t('!name resource', array(
@@ -201,7 +233,7 @@ function services_admin_context_resources($form_state, $context_name) {
           '#collapsible' => TRUE,
           '#collapsed' => TRUE,
         );
-        _services_resource_operation_settings($res_set['operations'][$op], $context, $resource, $op);
+        _services_resource_operation_settings($res_set['operations'][$op], $endpoint, $resource, $op);
       }
     }
 
@@ -218,7 +250,7 @@ function services_admin_context_resources($form_state, $context_name) {
           '#collapsible' => TRUE,
           '#collapsed' => TRUE,
         );
-        _services_resource_operation_settings($res_set['targeted_actions'][$action], $context, $resource, 'targeted actions', $action);
+        _services_resource_operation_settings($res_set['targeted_actions'][$action], $endpoint, $resource, 'targeted actions', $action);
       }
     }
 
@@ -237,7 +269,7 @@ function services_admin_context_resources($form_state, $context_name) {
   return $form;
 }
 
-function services_admin_context_resources_validate($form, $form_state) {
+function services_admin_endpoint_resources_validate($form, $form_state) {
   $res = $form_state['values']['resources'];
 
   // Validate aliases
@@ -252,12 +284,12 @@ function services_admin_context_resources_validate($form, $form_state) {
   }
 }
 
-function services_admin_context_resources_submit($form, $form_state) {
+function services_admin_endpoint_resources_submit($form, $form_state) {
   $resources = $form_state['values']['resources'];
-  $context = services_get_context($form_state['values']['context_name']);
+  $endpoint = services_get_endpoint($form_state['values']['endpoint_name']);
 
   foreach ($resources as $name => $resource) {
-    $c = isset($context['resources'][$name]) ? $context['resources'][$name] : array();
+    $c = isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
 
     $c['alias'] = $resource['alias'];
     foreach ($resource['operations'] as $op => $def) {
@@ -281,11 +313,11 @@ function services_admin_context_resources_submit($form, $form_state) {
       }
     }
 
-    $context['resources'][$name] = $c;
+    $endpoint['resources'][$name] = $c;
   }
 
-  drupal_set_message(t('Your context has been updated'), 'info');
-  services_write_context($context);
+  drupal_set_message(t('Your endpoint has been updated'), 'info');
+  services_write_endpoint($endpoint);
 }
 
 /**
@@ -322,31 +354,31 @@ function get_resource_operation_info($resource, $class, $name=NULL) {
  *  Optional. The name parameter is only used for actions, targeted actions
  *  and relationship.
  */
-function _services_resource_operation_settings(&$settings, $context, $resource, $class, $name=NULL) {
+function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name=NULL) {
   if ($rop = get_resource_operation_info($resource, $class, $name)) {
     $settings['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enabled'),
-      '#default_value' => !empty($rop['context']) && $rop['context']['enabled'],
+      '#default_value' => !empty($rop['endpoint']) && $rop['endpoint']['enabled'],
     );
 
-    if ($rop['context']['preprocess']) {
+    if ($rop['endpoint']['preprocess']) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Preprocess function'),
-        '#value' => $rop['context']['preprocess'],
+        '#value' => $rop['endpoint']['preprocess'],
       );
     }
 
-    if ($rop['context']['postprocess']) {
+    if ($rop['endpoint']['postprocess']) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Postprocess function'),
-        '#value' => $rop['context']['Postprocess'],
+        '#value' => $rop['endpoint']['Postprocess'],
       );
     }
 
-    drupal_alter('services_resource_operation_settings', $settings, $context, $resource, $class, $name);
+    drupal_alter('services_resource_operation_settings', $settings, $endpoint, $resource, $class, $name);
   }
 }
 

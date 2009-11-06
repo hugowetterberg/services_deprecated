@@ -41,52 +41,52 @@ function services_menu() {
     'title'             => 'Services',
     'description'       => 'Allows external applications to communicate with Drupal.',
     'access arguments'  => array('administer services'),
-    'page callback'     => 'services_admin_context_index',
-    'file'              => 'includes/admin_context.inc',
+    'page callback'     => 'services_admin_endpoint_index',
+    'file'              => 'includes/admin_endpoint.inc',
   );
-  $items['admin/build/services/contexts'] = array(
-    'title'             => 'Contexts',
-    'description'       => 'Administer the different services contexts.',
+  $items['admin/build/services/endpoints'] = array(
+    'title'             => 'endpoints',
+    'description'       => 'Administer the different services endpoints.',
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
   );
-  $items['admin/build/services/context-add'] = array(
-    'title'             => 'Add context',
-    'description'       => 'Add a services context.',
+  $items['admin/build/services/endpoint-add'] = array(
+    'title'             => 'Add endpoint',
+    'description'       => 'Add a services endpoint.',
     'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_context_add'),
+    'page arguments'    => array('services_admin_endpoint_add'),
     'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_context.inc',
+    'file'              => 'includes/admin_endpoint.inc',
     'type'              => MENU_LOCAL_TASK,
   );
-  $items['admin/build/services/contexts/%'] = array(
-    'title callback'    => '_services_edit_context_title',
+  $items['admin/build/services/endpoints/%'] = array(
+    'title callback'    => '_services_edit_endpoint_title',
     'title arguments'   => array('Edit !title', 4),
-    'description'       => 'Edit a context.',
+    'description'       => 'Edit a endpoint.',
     'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_context_edit', 4),
+    'page arguments'    => array('services_admin_endpoint_edit', 4),
     'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_context.inc',
+    'file'              => 'includes/admin_endpoint.inc',
     'type'              => MENU_CALLBACK,
     'weight'            => -10,
   );
-  $items['admin/build/services/contexts/%/edit'] = array(
+  $items['admin/build/services/endpoints/%/edit'] = array(
     'title'             => 'Edit',
-    'description'       => 'Edit the context.',
+    'description'       => 'Edit the endpoint.',
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
   );
-  $items['admin/build/services/contexts/%/resources'] = array(
+  $items['admin/build/services/endpoints/%/resources'] = array(
     'title'             => 'Resources',
-    'description'       => 'Edit the resource settings for the context.',
+    'description'       => 'Edit the resource settings for the endpoint.',
     'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_context_resources', 4),
+    'page arguments'    => array('services_admin_endpoint_resources', 4),
     'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_context.inc',
+    'file'              => 'includes/admin_endpoint.inc',
     'type'              => MENU_LOCAL_TASK,
   );
   $items['admin/services/ahah/security-options'] = array(
-    'file'              => 'includes/admin_context.inc',
+    'file'              => 'includes/admin_endpoint.inc',
     'page callback'     => '_services_ahah_security_options',
     'access arguments'  => array('administer services'),
     'type'              => MENU_CALLBACK,
@@ -97,14 +97,14 @@ function services_menu() {
     'type'              => MENU_CALLBACK,
   );
 
-  // Add menu items for the different context endpoints
-  $contexts = services_get_contexts();
-  foreach ($contexts as $name => $context) {
-    $items[$context['path']] = array(
+  // Add menu items for the different endpoints
+  $endpoints = services_get_endpoints();
+  foreach ($endpoints as $name => $endpoint) {
+    $items[$endpoint['path']] = array(
       'title'             => 'Services endpoint',
       'access callback'   => 'services_access_menu',
       'page callback'     => 'services_server',
-      'page arguments'    => array($context['server'], $context['path'], $name),
+      'page arguments'    => array($endpoint['server'], $name, $endpoint['path']),
       'type'              => MENU_CALLBACK,
     );
   }
@@ -113,12 +113,12 @@ function services_menu() {
 }
 
 /**
- * Menu system title callback for the edit context menu item.
+ * Menu system title callback for the edit endpoint menu item.
  */
-function _services_edit_context_title($title, $context) {
-  $context = services_get_context($context);
+function _services_edit_endpoint_title($title, $endpoint) {
+  $endpoint = services_get_endpoint($endpoint);
   return t($title, array(
-    '!title' => $context['title'],
+    '!title' => $endpoint['title'],
   ));
 }
 
@@ -127,9 +127,9 @@ function _services_edit_context_title($title, $context) {
  */
 function services_theme() {
   return array(
-    'services_context_index' => array(
-      'template' => 'services_context_index',
-      'arguments' => array('contexts' => NULL),
+    'services_endpoint_index' => array(
+      'template' => 'services_endpoint_index',
+      'arguments' => array('endpoints' => NULL),
     ),
   );
 }
@@ -140,9 +140,9 @@ function services_theme() {
 function services_bypass_secure_site($path, $menu_item=NULL) {
   $bypass = FALSE;
   if ($menu_item && $menu_item['page_callback'] == 'services_server') {
-    $context = services_get_context($menu_item['page_arguments'][2]);
+    $endpoint = services_get_endpoint($menu_item['page_arguments'][1]);
     // Only bypass securesite if a authentication module is enabled.
-    $bypass = $context && !empty($context['authentication']);
+    $bypass = $endpoint && !empty($endpoint['authentication']);
   }
   return $bypass;
 }
@@ -170,16 +170,17 @@ function services_get_servers() {
 /**
  * Callback for server endpoint
  */
-function services_server($server, $endpoint, $context) {
+function services_server($server, $endpoint, $endpoint_path, $path) {
   if (function_exists($server . '_server')) {
     // call the server
     services_set_server_info_from_array(array(
       'module' => $server,
       'endpoint' => $endpoint,
-      'context' => $context,
+      'endpoint_path' => $endpoint_path,
       'drupal_path' => getcwd(),
     ));
-    print call_user_func($server . '_server', $endpoint, $context);
+
+    print call_user_func($server . '_server', $endpoint, $endpoint_path);
 
     // Do not let this output
     module_invoke_all('exit');
@@ -424,10 +425,10 @@ function services_controller_execute($controller, $args = array(), $options=arra
 
   // Check authentication
   if (!(isset($options['skip_authentication']) || !$options['skip_authentication'])) {
-    $context_name = services_get_server_info('context');
-    $context = services_get_context($context_name);
+    $endpoint_name = services_get_server_info('endpoint');
+    $endpoint = services_get_endpoint($endpoint_name);
 
-    if ($auth_error = services_auth_invoke_custom($context['authentication'], 'authenticate_call', $controller, $args)) {
+    if ($auth_error = services_auth_invoke_custom($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
       return services_error($auth_error, 401);
     }
   }
@@ -490,26 +491,26 @@ function services_resource_uri($path) {
 }
 
 /**
- * Gets a services context
+ * Gets a services endpoint
  *
  * @param string $name
  * @return array
  */
-function services_get_context($name) {
-  $contexts = services_get_contexts();
-  $context = NULL;
-  if (isset($contexts[$name])) {
-    $context = $contexts[$name];
+function services_get_endpoint($name) {
+  $endpoints = services_get_endpoints();
+  $endpoint = NULL;
+  if (isset($endpoints[$name])) {
+    $endpoint = $endpoints[$name];
   }
-  return $context;
+  return $endpoint;
 }
 
 /**
- * Saves a services context.
+ * Saves a services endpoint.
  *
  * @param array $definition
  */
-function services_write_context($definition) {
+function services_write_endpoint($definition) {
   $encode = array(
     'authentication_settings', 'resources',
   );
@@ -521,76 +522,76 @@ function services_write_context($definition) {
     }
   }
 
-  $update = db_result(db_query("SELECT COUNT(context) FROM {services_context} WHERE context='%s'", array(
-    ':context' => $definition['context'],
-  ))) ? array('context') : NULL;
-  drupal_write_record('services_context', $definition, $update);
+  $update = db_result(db_query("SELECT COUNT(endpoint) FROM {services_endpoint} WHERE endpoint='%s'", array(
+    ':endpoint' => $definition['endpoint'],
+  ))) ? array('endpoint') : NULL;
+  drupal_write_record('services_endpoint', $definition, $update);
 }
 
 /**
- * Gets all defined services contexts.
+ * Gets all defined services endpoints.
  *
  * @param $include_disabled bool
- *  Pass TRUE if you want to include contexts that are disabled.
+ *  Pass TRUE if you want to include endpoints that are disabled.
  *  Defaults to FALSE.
  * @return array
  */
-function services_get_contexts($include_disabled=FALSE) {
-  // Get all contexts that are defined in code
-  $contexts = module_invoke_all('services_contexts', $include_disabled);
-  // Assign the context name to the context attribute to make
-  // context from code consistent with those loaded from db.
-  foreach ($contexts as $name => $def) {
-    $contexts[$name]['context'] = $name;
+function services_get_endpoints($include_disabled=FALSE) {
+  // Get all endpoints that are defined in code
+  $endpoints = module_invoke_all('services_endpoints', $include_disabled);
+  // Assign the endpoint name to the endpoint attribute to make
+  // endpoint from code consistent with those loaded from db.
+  foreach ($endpoints as $name => $def) {
+    $endpoints[$name]['endpoint'] = $name;
   }
 
-  // Allow modules to load contexts from database sources
-  $loaded = module_invoke_all('services_contexts_load', $include_disabled);
+  // Allow modules to load endpoints from database sources
+  $loaded = module_invoke_all('services_endpoints_load', $include_disabled);
   foreach ($loaded as $name => $def) {
-    $contexts[$name] = $def;
+    $endpoints[$name] = $def;
   }
 
-  // Allow modules to alter the contexts
-  drupal_alter('services_contexts', $contexts);
+  // Allow modules to alter the endpoints
+  drupal_alter('services_endpoints', $endpoints);
 
   // Enforce the $include_disabled setting
   if (!$include_disabled) {
-    foreach ($contexts as $name => $def) {
+    foreach ($endpoints as $name => $def) {
       // When the enabled attribute isn't set it's interpreted as enabled
       if (isset($def['enabled']) && !$def['enabled']) {
-        unset($contexts[$name]);
+        unset($endpoints[$name]);
       }
       else {
-        $contexts[$name]['enabled'] = TRUE;
+        $endpoints[$name]['enabled'] = TRUE;
       }
     }
   }
 
-  return $contexts;
+  return $endpoints;
 }
 
 /**
- * Implementation of hook_services_contexts_load().
+ * Implementation of hook_services_endpoints_load().
  */
-function services_services_contexts_load($include_disabled = FALSE) {
-  $contexts = array();
+function services_services_endpoints_load($include_disabled = FALSE) {
+  $endpoints = array();
 
-  // Load context from the database
+  // Load endpoint from the database
   if ($include_disabled) {
-    $res = db_query('SELECT * FROM {services_context}');
+    $res = db_query('SELECT * FROM {services_endpoint}');
   }
   else {
-    $res = db_query('SELECT * FROM {services_context} WHERE enabled=1');
+    $res = db_query('SELECT * FROM {services_endpoint} WHERE enabled=1');
   }
 
   while ($row = db_fetch_array($res)) {
-    $contexts[$row['context']] = _services_context_from_result($row);
+    $endpoints[$row['endpoint']] = _services_endpoint_from_result($row);
   }
 
-  return $contexts;
+  return $endpoints;
 }
 
-function _services_context_from_result($row) {
+function _services_endpoint_from_result($row) {
   $decode = array(
     'authentication_settings', 'resources',
   );
@@ -611,13 +612,13 @@ function _services_context_from_result($row) {
 /**
  * Gets all resource definitions.
  *
- * @param string $context_name
- *   Optional. The endpoint context that's being used. Defaults to NULL.
+ * @param string $endpoint_name
+ *   Optional. The endpoint endpoint that's being used. Defaults to NULL.
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($context_name=NULL) {
-  $cache_key = empty($context_name) ? 'services:resources' : 'services:' . $context_name . ':resources';
+function services_get_all_resources($endpoint_name=NULL) {
+  $cache_key = empty($endpoint_name) ? 'services:resources' : 'services:' . $endpoint_name . ':resources';
 
   if (($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
@@ -626,15 +627,15 @@ function services_get_all_resources($context_name=NULL) {
     // Get all installed resources
     $resources = module_invoke_all('services_resources');
 
-    $context = NULL;
-    if (!empty($context_name)) {
-      // Load the context
-      $context = services_get_context($context_name);
-      // Apply the context on the services
-      services_apply_context($resources, $context, TRUE);
+    $endpoint = NULL;
+    if (!empty($endpoint_name)) {
+      // Load the endpoint
+      $endpoint = services_get_endpoint($endpoint_name);
+      // Apply the endpoint on the services
+      services_apply_endpoint($resources, $endpoint, TRUE);
     }
 
-    drupal_alter('services_resources', $resources, $context);
+    drupal_alter('services_resources', $resources, $endpoint);
 
     $controllers = array();
     services_process_resources($resources, $controllers);
@@ -646,21 +647,21 @@ function services_get_all_resources($context_name=NULL) {
       }
     }
 
-    drupal_alter('services_resources_post_processing', $resources, $context);
+    drupal_alter('services_resources_post_processing', $resources, $endpoint);
 
-    // Do some context-dependent processing
-    if ($context) {
+    // Do some endpoint-dependent processing
+    if ($endpoint) {
       // Let the authentication module alter our controllers
-      if (!empty($context['authentication'])) {
-        services_auth_invoke_custom($context['authentication'], 'alter_controllers', $controllers, $context);
+      if (!empty($endpoint['authentication'])) {
+        services_auth_invoke_custom($endpoint['authentication'], 'alter_controllers', $controllers, $endpoint);
       }
 
-      // Apply any aliases from context
-      if (!empty($context))
+      // Apply any aliases from endpoint
+      if (!empty($endpoint))
       $aliased = array();
       foreach ($resources as $key => $def) {
-        if (!empty($def['context']['alias'])) {
-          $aliased[$def['context']['alias']] = $def;
+        if (!empty($def['endpoint']['alias'])) {
+          $aliased[$def['endpoint']['alias']] = $def;
         }
         else {
           $aliased[$key] = $def;
@@ -675,22 +676,22 @@ function services_get_all_resources($context_name=NULL) {
 }
 
 /**
- * Applies the context to a set of resources. Resources and controllers that
+ * Applies the endpoint to a set of resources. Resources and controllers that
  * aren't supported will be removed (if $strict is set to TRUE) and both
- * resources and controllers will get the 'context' attribute set.
+ * resources and controllers will get the 'endpoint' attribute set.
  *
  * @param array $resources
- *  An array of resources that the context should be applied on.
- * @param array $context
- *  A context information array.
+ *  An array of resources that the endpoint should be applied on.
+ * @param array $endpoint
+ *  A endpoint information array.
  * @param bool $strict
  *  Optional. 
  * @return void
  */
-function services_apply_context(&$resources, $context, $strict=TRUE) {
+function services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
   foreach ($resources as $name => &$resource) {
-    $cres = $context && isset($context['resources'][$name]) ? $context['resources'][$name] : array();
-    $resource['context'] = $cres;
+    $cres = $endpoint && isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
+    $resource['endpoint'] = $cres;
 
     if ($strict && empty($cres)) {
       unset($resources[$name]);
@@ -699,7 +700,7 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
       $crud = array('create', 'retrieve', 'update', 'delete', 'index');
       foreach ($crud as $op) {
         $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
-        $resource[$op]['context'] = $cop;
+        $resource[$op]['endpoint'] = $cop;
         if ($strict && empty($cop)) {
           unset($resource['' . $op]);
         }
@@ -716,7 +717,7 @@ function services_apply_context(&$resources, $context, $strict=TRUE) {
               }
             }
             else {
-              $resource[$class][$op]['context'] = $cop;
+              $resource[$class][$op]['endpoint'] = $cop;
             }
           }
         }
@@ -796,7 +797,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
   }
 }
 
-function services_method_get($method_name, $context='') {
+function services_method_get($method_name, $endpoint='') {
   // TODO: This function must be rewritten to support the resource model
 }
 

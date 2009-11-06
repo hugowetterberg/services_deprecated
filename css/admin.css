@@ -1,23 +1,23 @@
-.services-context {
+.services-endpoint {
   background-color: #FFFFFF;
   background-color: rgba(255,255,255,0.5);
   border-bottom: 0.5em solid #999999;
   padding: 1em;
 }
 
-.services-context h2 {
+.services-endpoint h2 {
   margin-bottom: 0.5em;
 }
 
-.services-context label {
+.services-endpoint label {
   font-weight: bold;
 }
 
-.services-context .context-info {
+.services-endpoint .endpoint-info {
   float: left;
   width: 49.9%;
 }
 
-.services-context a.edit-context {
+.services-endpoint a.edit-endpoint {
   clear: both;
 }

@@ -69,7 +69,6 @@ class NodeResourceFeedModelItem implements ResourceTimeFeedModelItem {
    */
   public function getDescription() {
     $description = '';
-    error_log(var_export($this, TRUE));
     if ($this->mode == 'render') {
       // Don't bother with the rendering process if only
       // the title was requested.

@@ -424,7 +424,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
   }
 
   // Check authentication
-  if (!(isset($options['skip_authentication']) || !$options['skip_authentication'])) {
+  if (!isset($options['skip_authentication']) || !$options['skip_authentication']) {
     $endpoint_name = services_get_server_info('endpoint');
     $endpoint = services_get_endpoint($endpoint_name);
 

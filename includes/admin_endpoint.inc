@@ -237,20 +237,27 @@ function services_admin_endpoint_resources($form_state, $endpoint_name) {
       }
     }
 
-    if (!empty($resource['#targeted actions'])) {
-      $res_set['targeted_actions'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Targeted actions'),
-        '#tree' => TRUE,
-      );
-      foreach ($resource['#targeted actions'] as $action => $definition) {
-        $res_set['targeted_actions'][$action] = array(
+    $classes = array(
+      'actions' => 'actions',
+      'targeted_actions' => 'targeted actions',
+      'relationships' => 'relationships',
+    );
+    foreach ($classes as $element => $class) {
+      if (!empty($resource[$class])) {
+        $res_set[$element] = array(
           '#type' => 'fieldset',
-          '#title' => $action,
-          '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
+          '#title' => t($class),
+          '#tree' => TRUE,
         );
-        _services_resource_operation_settings($res_set['targeted_actions'][$action], $endpoint, $resource, 'targeted actions', $action);
+        foreach ($resource[$class] as $action => $definition) {
+          $res_set[$element][$action] = array(
+            '#type' => 'fieldset',
+            '#title' => $action,
+            '#collapsible' => TRUE,
+            '#collapsed' => TRUE,
+          );
+          _services_resource_operation_settings($res_set[$element][$action], $endpoint, $resource, $class, $action);
+        }
       }
     }
 

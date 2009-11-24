@@ -173,6 +173,12 @@ function services_update_6300() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
+      'title' => array(
+        'description' => 'The title of the endpoint.',
+        'type'        => 'varchar',
+        'length'      => 255,
+        'not null'    => TRUE,
+      ),
       'enabled'       => array(
         'description' => 'Whether the the endpoint is enabled or not',
         'type'        => 'int',

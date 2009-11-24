@@ -452,7 +452,11 @@ function services_controller_execute($controller, $args = array(), $options=arra
 
   // Call default or custom access callback
   if (call_user_func_array($controller['access callback'], $access_arguments) != TRUE) {
-    return services_error(t('Access denied'), 401);
+    global $user;
+    return services_error(t('Access denied for user !uid "@user"', array(
+      '!uid' => $user->uid,
+      '@user' => $user->name,
+    )), 401);
   }
 
   // Change working directory to drupal root to call drupal function,

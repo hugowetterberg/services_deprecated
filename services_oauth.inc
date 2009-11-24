@@ -12,9 +12,9 @@
  *  Returns nothing, or a error message if authentication fails
  */
 function _services_oauth_authenticate_call($method, $args) {
-  $context = $method['context'];
-  $cred = isset($context['oauth_credentials']) ? $context['oauth_credentials'] : 'token';
-  $auth_level = isset($context['oauth_authorization']) ? $context['oauth_authorization'] : '*';
+  $endpoint = $method['endpoint'];
+  $cred = isset($endpoint['oauth_credentials']) ? $endpoint['oauth_credentials'] : 'token';
+  $auth_level = isset($endpoint['oauth_authorization']) ? $endpoint['oauth_authorization'] : '*';
 
   // If no credentials are needed we'll pass this one through
   if ($cred == 'none') {

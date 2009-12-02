@@ -439,7 +439,7 @@ function _services_ahah_security_options() {
 
   print drupal_to_js(array(
     'status' => TRUE,
-    'data' => $output,
+    'data' => $output ? $output : '',
   ));
   exit;
 }

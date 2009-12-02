@@ -1,5 +1,5 @@
 <?php
-// $Id: comment_service.module,v 1.1.2.1 2009/06/06 22:57:40 marcingy Exp $
+// $Id: comment_service.module,v 1.1.2.1.2.2 2009/11/02 19:42:33 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -67,7 +67,7 @@ function comment_service_service() {
         array(
           '#name'         => 'start',
           '#type'         => 'int',
-          '#description'  => t('If count is set to non-zero value, You can pass also non-zero value for start. For example to get comments from 5 to 15, pass count=10 and start=5.'),
+          '#description'  => t('If count is set to non-zero value, you can pass also non-zero value for start. For example to get comments from 5 to 15, pass count=10 and start=5.'),
         ),
       ),
       '#return' => 'array',
@@ -130,12 +130,4 @@ function comment_service_service() {
       '#help'   => t('This method returns the number of new comments on a given node since a given timestamp.'),
     ),
   );
-}
-
-function comments_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function comments_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

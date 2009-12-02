@@ -1,5 +1,5 @@
 <?php
-// $Id: file_service.inc,v 1.1.2.7 2009/02/15 20:33:14 snelson Exp $
+// $Id: file_service.inc,v 1.1.2.7.2.1 2009/10/15 02:54:23 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -12,7 +12,7 @@
  * @param $fid
  *   Number. File ID
  * @return
- *   Array. All elements from a given file
+ *   Array. All elements for a given file
  */
 function file_service_get($fid) {
   if ($file = db_fetch_array(db_query('SELECT * FROM {files} WHERE fid = %d', $fid))) {
@@ -25,6 +25,102 @@ function file_service_get($fid) {
   else {
     return services_error(t('There is no file with the given ID.'));
   }
+}
+
+
+/**
+ * Check if the user has permission to save file information.
+ *
+ * Will probably want to revisit this down the road to make it
+ * somewhat tougher, esp if we get to the point where we're saving
+ * actual files (see below.)
+ */
+function file_service_save_access() {
+  return user_access('save file information');
+}
+
+/**
+ * Save file information.
+ *
+ * This is basically a copy of file_save_upload() from includes/file.inc
+ * without the upload-specific requirements. In D7 with File API this will
+ * be a lot easier to deal with.
+ *
+ * @param $file
+ *   Array representing the file information
+ */
+function file_service_save($file) {
+  global $user;
+  $file = (object) $file;
+
+  // If the file data is empty then bail
+  if (!isset($file->file)) {
+    return FALSE;
+  }
+
+  // If the submitted file is an update, then set the update parameter for
+  // drupal_write_record(), indicating such. Otherwise we can just pass the
+  // object in and it will be treated as an insert.
+  $update = array();
+  if (!empty($file->fid)) {
+    $update = 'fid';
+  }
+
+  // Build the list of non-munged extensions.
+  // @todo: this should not be here. we need to figure out the right place.
+  // @todo: also isn't that repeated variable get a waste? I mean, I guess it
+  //        is cached but still it is pretty ugly.
+  $extensions = '';
+  foreach ($user->roles as $rid => $name) {
+    $extensions .= ' '. variable_get("upload_extensions_$rid",
+    variable_get('upload_extensions_default', 'jpg jpeg gif png txt html doc xls pdf ppt pps odt ods odp'));
+  }
+
+  // Get the directory name for the location of the file:
+  $dir = dirname($file->filepath);
+  // Build the destination folder tree if it doesn't already exists.
+  if (!file_check_directory($dir, FILE_CREATE_DIRECTORY)) {
+    return services_error("Could not create destination directory for file.");
+  }
+
+  // Update file object as necessary
+  $file->filepath = file_destination(file_create_path($file->filepath), FILE_EXISTS_RENAME);
+  $file->filename = file_munge_filename(trim(basename($file->filepath), '.'), $extensions, TRUE);
+  $file->filemime = file_get_mimetype($file->filename);
+
+  // Rename potentially executable files, to help prevent exploits.
+  if (preg_match('/\.(php|pl|py|cgi|asp|js)$/i', $file->filename) && (substr($file->filename, -4) != '.txt')) {
+    $file->filemime = 'text/plain';
+    $file->filepath .= '.txt';
+    $file->filename .= '.txt';
+  }
+
+  // If the destination is not provided, or is not writable, error our
+  if (empty($file->filepath) || file_check_path($file->filepath) === FALSE) {
+    return services_error("Destintion directory does not exist or is not writeable.");
+  }
+
+  //The filepath that ends up in the node must contain the filename
+  $file->filepath .= '/' . $file->filename;
+
+  // Write the file
+  if (!file_save_data(base64_decode($file->file), $file->filepath)) {
+    return services_error("Could not write file to destination");
+  }
+
+  // If we made it this far it's safe to record this file in the database.
+  drupal_write_record('files', $file, $update);
+
+  // hook_file_insert() requires an object
+  if (empty($update)) {
+    foreach (module_implements('file_insert') as $module) {
+      $function =  $module .'_file_insert';
+      $function($file);
+    }
+  }
+
+  // Return the fid
+  return $file->fid;
 }
 
 /**

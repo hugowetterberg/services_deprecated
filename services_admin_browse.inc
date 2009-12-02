@@ -1,5 +1,5 @@
 <?php
-// $Id: services_admin_browse.inc,v 1.5.2.45.2.2 2009/09/05 13:57:58 marcingy Exp $
+// $Id: services_admin_browse.inc,v 1.5.2.45.2.3 2009/11/04 21:43:25 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -20,8 +20,10 @@ function services_admin_browse_index() {
     $output .= '<ul>';
     foreach ($servers as $module) {
       $info = module_invoke($module, 'server_info');
-      $name = $info['#name'];
-      $path = 'services/'. $info['#path'];
+      services_strip_hashes($info);
+
+      $name = $info['name'];
+      $path = 'services/'. $info['path'];
       $output .= '<li class="leaf">'. l($name .' - /'. $path, $path) .'</li>';
     }
     $output .= '</ul>';
@@ -36,7 +38,7 @@ function services_admin_browse_index() {
   // group namespaces
   $services = array();
   foreach ($methods as $method) {
-    $namespace = drupal_substr($method['#method'], 0, strrpos($method['#method'], '.'));
+    $namespace = drupal_substr($method['method'], 0, strrpos($method['method'], '.'));
     $services[$namespace][] = $method;
   }
 
@@ -45,7 +47,7 @@ function services_admin_browse_index() {
       $output .= '<h3>'. $namespace .'</h3>';
       $output .= '<ul>';
       foreach ($methods as $method) {
-        $output .= '<li class="leaf">'. l($method['#method'], 'admin/build/services/browse/'. $method['#method']) .'</li>';
+        $output .= '<li class="leaf">'. l($method['method'], 'admin/build/services/browse/'. $method['method']) .'</li>';
       }
       $output .= '</ul>';
     }
@@ -62,18 +64,18 @@ function services_admin_browse_method($method) {
 
   $output = '';
 
-  $output .= '<h3>'. $method['#method'] .'</h3>';
-  $output .= '<p>'. $method['#help'] .'</p>';
+  $output .= '<h3>'. $method['method'] .'</h3>';
+  $output .= '<p>'. $method['help'] .'</p>';
 
   // List arguments.
-  $output .= '<h3>'. t('Arguments') .' ('. count($method['#args']) .')</h3>';
+  $output .= '<h3>'. t('Arguments') .' ('. count($method['args']) .')</h3>';
   $output .= '<dl id="service-browser-arguments">';
   $count = 0;
-  foreach ($method['#args'] as $arg) {
+  foreach ($method['args'] as $arg) {
     $count++;
-    $output .= '<dt><em class="type">'. $arg['#type'] .'</em><strong class="name">'.
-      $arg['#name'] .'</strong> ('. (($arg['#optional']) ? t('optional') : t('required')) .')</dt>';
-    $output .= '<dd>'. $arg['#description'] .'</dd>';
+    $output .= '<dt><em class="type">'. $arg['type'] .'</em><strong class="name">'.
+      $arg['name'] .'</strong> ('. (($arg['optional']) ? t('optional') : t('required')) .')</dt>';
+    $output .= '<dd>'. $arg['description'] .'</dd>';
   }
 
   $output .= '</dl>';
@@ -100,15 +102,15 @@ function services_admin_browse_test() {
   $form['arg'] = array('#tree' => TRUE);
   $form['format'] = array('#tree' => TRUE);
 
-  foreach ($method['#args'] as $key => $arg) {
+  foreach ($method['args'] as $key => $arg) {
     $form['name'][$key]         = array(
-      '#value' => $arg['#name']
+      '#value' => $arg['name']
     );
     $form['optional'][$key]     = array(
-      '#value' => ($arg['#optional']) ? t('optional') : t('required')
+      '#value' => ($arg['optional']) ? t('optional') : t('required')
     );
 
-    if (isset($arg['#size']) && $arg['#size'] == 'big') {
+    if (isset($arg['size']) && $arg['size'] == 'big') {
       $form['arg'][$key] = array(
         '#type'           => 'textarea'
       );
@@ -120,7 +122,7 @@ function services_admin_browse_test() {
     }
 
     $format_opt = array();
-    switch ($arg['#type']) {
+    switch ($arg['type']) {
       case 'array':
         $format_opt['cdel'] = t('Comma delimited');
       case 'struct':
@@ -159,7 +161,7 @@ function services_admin_browse_test_submit($form, $form_state) {
   $args = services_admin_browse_test_unserialize_args($form_state['values']['arg'], $form_state['values']['format']);
   // Allow the authorization module to handle submitted values.
   services_auth_invoke('alter_browse_form_submit', $method, $args);
-  $result = services_method_call($method['#method'], $args, TRUE);
+  $result = services_method_call($method['method'], $args, TRUE);
   $_services_admin_browse_test_submit_result = '<pre>'. htmlspecialchars(print_r($result, TRUE)) .'</pre>';
 }
 
@@ -167,8 +169,8 @@ function services_admin_browse_test_unserialize_args($values, $formats) {
   $method = services_method_get(arg(4));
   $noskip = FALSE;
   // Convert args
-  for ($c = count($method['#args']) - 1; $c >= 0; $c--) {
-    $arg = $method['#args'][$c];
+  for ($c = count($method['args']) - 1; $c >= 0; $c--) {
+    $arg = $method['args'][$c];
     $value = $values[$c];
 
     // Remove empty values from end of array
@@ -192,7 +194,7 @@ function services_admin_browse_test_unserialize_args($values, $formats) {
           $return[$c] = NULL;
         }
         else {
-          $return[$c] = json_decode($value, $arg['#type'] === 'array');
+          $return[$c] = json_decode($value, $arg['type'] === 'array');
         }
         break;
       case 'sphp':
@@ -254,7 +256,9 @@ function services_admin_settings() {
     $auth_options = array('' => t('-- Select a authorization module'));
     foreach ($auth_modules as $module) {
       $info = services_auth_info(NULL, $module);
-      $auth_options[$info['#description']][$module] = $info['#title'];
+      services_strip_hashes($info);
+
+      $auth_options[$info['description']][$module] = $info['title'];
     }
 
     $form['security'] = array(

@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.inc,v 1.1.2.8.2.3 2009/09/05 13:57:58 marcingy Exp $
+// $Id: services_keyauth.inc,v 1.1.2.8.2.8 2009/11/10 18:53:18 heyrocker Exp $
 
 /**
  * @file
@@ -11,7 +11,7 @@ function _services_keyauth_security_settings() {
     '#type'           => 'checkbox',
     '#title'          => t('Use keys'),
     '#default_value'  => variable_get('services_use_key', TRUE),
-    '#description'    => t('When enabled all method calls need to provide a validation token to autheciate themselves with the server.'),
+    '#description'    => t('When enabled all method calls need to provide a validation token to authenticate themselves with the server.'),
   );
   $form['services_key_expiry'] = array(
     '#type'           => 'textfield',
@@ -25,7 +25,7 @@ function _services_keyauth_security_settings() {
     '#type'           => 'checkbox',
     '#title'          => t('Use sessid'),
     '#default_value'  => variable_get('services_use_sessid', TRUE),
-    '#description'    => t('When enabled, all method calls must include a valid sessid. Only disable this setting if the application will user browser-based cookies.')
+    '#description'    => t('When enabled, all method calls must include a valid sessid. Only disable this setting if the application will use browser-based cookies.')
   );
   return $form;
 }
@@ -51,69 +51,66 @@ function _services_keyauth_alter_methods(&$methods) {
 
   // sessid arg
   $arg_sessid = array(
-    '#name' => 'sessid',
-    '#type' => 'string',
-    '#description' => t('A valid sessid.'),
+    'name' => 'sessid',
+    'type' => 'string',
+    'description' => t('A valid sessid.'),
   );
 
   $arg_domain_time_stamp = array(
-    '#name' => 'domain_time_stamp',
-    '#type' => 'string',
-    '#description' => t('Time stamp used to hash key.'),
+    'name' => 'domain_time_stamp',
+    'type' => 'string',
+    'description' => t('Time stamp used to hash key.'),
   );
 
   $arg_nonce = array(
-    '#name' => 'nonce',
-    '#type' => 'string',
-    '#description' => t('One time use nonce also used hash key.'),
+    'name' => 'nonce',
+    'type' => 'string',
+    'description' => t('One time use nonce also used hash key.'),
   );
 
   // domain arg
   $arg_domain_name = array(
-    '#name' => 'domain_name',
-    '#type' => 'string',
-    '#description' => t('A valid domain for the API key.'),
+    'name' => 'domain_name',
+    'type' => 'string',
+    'description' => t('A valid domain for the API key.'),
   );
 
   // api_key arg
   $arg_api_key = array(
-    '#name' => 'hash',
-    '#type' => 'string',
-    '#description' => t('A valid API key.'),
+    'name' => 'hash',
+    'type' => 'string',
+    'description' => t('A valid API key.'),
   );
 
   foreach ($methods as $key => &$method) {
     // set method defaults
-    switch ($method['#method']) {
+    switch ($method['method']) {
       case 'system.connect':
-      case 'search.nodes':
-      case 'search.content':
-      case 'search.users':
-        $method['#key'] = FALSE;
-        $method['#auth'] = FALSE;
+        $method['key'] = FALSE;
+        $method['auth'] = FALSE;
         break;
       default:
-        $method['#key'] = TRUE;
-        $method['#auth'] = TRUE;
+        $method['key'] = TRUE;
+        $method['auth'] = TRUE;
     }
     
-    if ($method['#auth'] && variable_get('services_use_sessid', TRUE)) {
-      array_unshift($method['#args'], $arg_sessid);
+    if ($method['auth'] && variable_get('services_use_sessid', TRUE)) {
+      array_unshift($method['args'], $arg_sessid);
     }
 
-    if ($method['#key'] && variable_get('services_use_key', TRUE)) {
-      array_unshift($method['#args'], $arg_nonce);
-      array_unshift($method['#args'], $arg_domain_time_stamp);
-      array_unshift($method['#args'], $arg_domain_name);
-      array_unshift($method['#args'], $arg_api_key);
+    if ($method['key'] && variable_get('services_use_key', TRUE)) {
+      array_unshift($method['args'], $arg_nonce);
+      array_unshift($method['args'], $arg_domain_time_stamp);
+      array_unshift($method['args'], $arg_domain_name);
+      array_unshift($method['args'], $arg_api_key);
     }
   }
 }
 
 function _services_keyauth_alter_browse_form(&$form, $method) {
 
-  foreach ($method['#args'] as $key => $arg) {
-    switch ($arg['#name']) {
+  foreach ($method['args'] as $key => $arg) {
+    switch ($arg['name']) {
       case 'hash':
         $form['arg'][$key] = array(
           '#title'          => 'Hash',
@@ -144,7 +141,7 @@ function _services_keyauth_alter_browse_form(&$form, $method) {
 }
 
 function _services_keyauth_authenticate_call($method, $method_name, &$args) {
-  if ($method['#key'] && variable_get('services_use_key', TRUE)) {
+  if ($method['key'] && variable_get('services_use_key', TRUE)) {
     $hash = array_shift($args);
     $domain = array_shift($args);
     $timestamp = array_shift($args);
@@ -160,7 +157,7 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
     if (db_result(db_query("SELECT count(*) FROM {services_timestamp_nonce}
         WHERE domain = '%s' AND nonce = '%s'",
         $domain, $nonce))) {
-      return services_error(t('Token has been used previously for a request. Re-try with another nonce key.', 401));
+      return services_error(t('Token has been used previously for a request. Re-try with another nonce key.'), 401);
     }
     else{
       db_query("INSERT INTO {services_timestamp_nonce} (domain, timestamp, nonce)
@@ -182,7 +179,7 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
 
   // Add additonal processing for methods requiring session
   $session_backup = NULL;
-  if ($method['#auth'] && variable_get('services_use_sessid', TRUE)) {
+  if ($method['auth'] && variable_get('services_use_sessid', TRUE)) {
     $sessid = array_shift($args);
     if (empty($sessid)) {
       return t('Invalid sessid.');
@@ -192,7 +189,7 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
 }
 
 function _services_keyauth_alter_browse_form_submit($method, &$args) {
-  if ($method['#key'] && variable_get('services_use_key', TRUE)) {
+  if ($method['key'] && variable_get('services_use_key', TRUE)) {
     $args_stripped = $args;
   
     for ($i = 1; $i <= 4; $i++) {

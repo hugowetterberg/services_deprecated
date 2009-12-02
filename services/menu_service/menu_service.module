@@ -1,5 +1,5 @@
 <?php
-// $Id: menu_service.module,v 1.1.2.7 2009/05/18 20:55:21 marcingy Exp $
+// $Id: menu_service.module,v 1.1.2.7.2.1 2009/10/15 03:54:05 marcingy Exp $
 /**
  * @file
  * Adds a service type for a menu
@@ -36,12 +36,4 @@ function menu_service_service() {
         t('Retrieves a menu tree.')
     )
   );
-}
-
-function menu_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function menu_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

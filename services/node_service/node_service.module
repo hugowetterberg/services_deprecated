@@ -1,5 +1,5 @@
 <?php
-// $Id: node_service.module,v 1.5.2.21.2.1 2009/08/08 03:07:14 marcingy Exp $
+// $Id: node_service.module,v 1.5.2.21.2.2 2009/10/15 03:54:05 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -108,12 +108,4 @@ function node_service_service() {
           '#description'    => t('A node ID.'))),
       '#help'             => t('Delete a node.')),
   );
-}
-
-function node_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function node_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

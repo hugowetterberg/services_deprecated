@@ -1,5 +1,5 @@
 <?php
-// $Id: taxonomy_service.module,v 1.4.2.9 2009/05/18 20:55:22 marcingy Exp $
+// $Id: taxonomy_service.module,v 1.4.2.9.2.1 2009/10/15 03:54:06 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -129,12 +129,4 @@ function taxonomy_service_service() {
       '#help'     => t('Finds all nodes that match selected taxonomy conditions.')
     ),
   );
-}
-
-function taxonomy_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function taxonomy_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

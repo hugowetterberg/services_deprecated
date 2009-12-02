@@ -1,5 +1,5 @@
 <?php
-// $Id: views_service.inc,v 1.1.2.12.2.1 2009/09/05 13:57:58 marcingy Exp $
+// $Id: views_service.inc,v 1.1.2.12.2.2 2009/11/27 16:51:00 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -11,44 +11,46 @@
  *
  * @param $view_name
  *   String. The views name.
- * @param $fields
- *   Array (optional). Array of fields to return.
- * @param $args
- *   Array (optional). Array of args to pass to the view.
+ * @param $display_id
+ *   String (optional). The display name.
  * @param $offset
- *   Array (optional). Offset record to start from.
+ *   Integer (optional). An offset integer for paging.
  * @param $limit
- *   Array (optional). Max number of records to return.
+ *   Integer (optional). A limit integer for paging.
+ * @param $args
+ *   Array (optional). A list of arguments.
+ * @param format_output
+ *   Boolean (optional). TRUE if view should be formatted using the defined
+ *   style plugin.
  * @return
  *   Array. The views return.
  */
-function views_service_get($view_name, $fields = array(), $args = array(), $offset = 0, $limit = 0) {
+function views_service_get($view_name, $display_id = 'default', $args = array(), $offset = 0, $limit = 0, $format_output = FALSE) {
+  $result = array();
   $view = views_get_view($view_name);
 
-  // Put all arguments and then execute
+  // Put all arguments and then execute.
   $view->set_arguments($args, FALSE);
   $view->set_offset($offset);
-  $view->set_items_per_page($limit);
-  $view->execute();
-  
-  // Get row plugin setting
-  $row_plugin = $view->display[$view->current_display]->display_options['row_plugin'];
-  
-  $nodes = array();
-  // If row plugin is node, then we must do a node_load
-  if ($row_plugin == 'node') {
-    foreach ($view->result as $node) {
-      $nodes[] = services_node_load(node_load($node->nid), $fields);
-    }
+  // If offset is set we can't have a user pager.
+  if (empty($offset)) {
+    $view->set_use_pager(TRUE);
+    $view->set_items_per_page($limit);
   }
-  // Otherwise, pass through the fields filter, just in case
   else {
-    foreach ($view->result as $node) {
-      $nodes[] = services_node_load($node, $fields);
-    }
+    // Disable the user pager.
+    $view->set_use_pager(FALSE);
   }
-
-  return $nodes;
+  if (!$format_output) {
+    $view->set_display($display_id);
+    $view->execute();
+    $result = $view->result;
+  }
+  else {
+    // We want to keep the result an array.
+    $result[] = $view->preview($display_id);
+  }
+  return $result;
 }
 
 /**

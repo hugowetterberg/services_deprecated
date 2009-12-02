@@ -1,5 +1,5 @@
 <?php
-// $Id: system_service.module,v 1.3.2.20 2009/05/20 01:53:15 marcingy Exp $
+// $Id: system_service.module,v 1.3.2.20.2.1 2009/10/15 03:54:05 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -158,12 +158,4 @@ function system_service_service() {
         '#help'     => t('Clear cache on remote site.'),
       ),
   );
-}
-
-function system_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function system_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

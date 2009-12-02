@@ -1,5 +1,5 @@
 <?php
-// $Id: services.module,v 1.8.2.88.2.6 2009/09/05 13:57:58 marcingy Exp $
+// $Id: services.module,v 1.8.2.88.2.10 2009/11/04 21:37:01 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -117,7 +117,9 @@ function services_server($server_path = NULL) {
   // Find which module the server is part of
   foreach (module_implements('server_info') as $module) {
     $info = module_invoke($module, 'server_info');
-    if ($info['#path'] == $server_path) {
+    services_strip_hashes($info);
+
+    if ($info['path'] == $server_path) {
 
       // call the server
       services_set_server_info($module);
@@ -141,7 +143,7 @@ function services_crossdomain_xml() {
   $output .= '<cross-domain-policy>'."\n";
   $output .= '  <allow-access-from domain="'. check_plain($_SERVER['HTTP_HOST']) .'" />'."\n";
   $output .= '  <allow-access-from domain="*.'. check_plain($_SERVER['HTTP_HOST']) .'" />'."\n";
-  $keys = services_get_keys();
+  $keys = (function_exists('services_keyauth_get_keys')) ? services_keyauth_get_keys() : array();
 
   foreach ($keys as $key) {
     if (!empty($key->domain)) {
@@ -236,7 +238,7 @@ function services_auth_invoke($method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NU
   // Get information about the current auth module
   $func = services_auth_info($method, $module);
   if ($func) {
-    if ($file = services_auth_info('#file')) {
+    if ($file = services_auth_info('file')) {
       require_once(drupal_get_path('module', $module) . '/' . $file);
     }
 
@@ -256,7 +258,7 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
   // Get information about the auth module
   $func = services_auth_info($method, $module);
   if ($func) {
-    if ($file = services_auth_info('#file', $module)) {
+    if ($file = services_auth_info('file', $module)) {
       require_once(drupal_get_path('module', $module) . '/' . $file);
     }
 
@@ -276,7 +278,7 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
  * This is the magic function through which all remote method calls must pass.
  */
 function services_method_call($method_name, $args = array(), $browsing = FALSE) {
-  if (is_array($method_name) && isset($method_name['#callback'])) {
+  if (is_array($method_name) && isset($method_name['callback'])) {
     $method = $method_name;
   }
   else {
@@ -290,8 +292,8 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
 
   // Check for missing args
   $hash_parameters = array();
-  foreach ($method['#args'] as $key => $arg) {
-    if (!$arg['#optional']) {
+  foreach ($method['args'] as $key => $arg) {
+    if (!$arg['optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {
         return services_error(t('Missing required arguments.'), 406);
       }
@@ -308,15 +310,17 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
     }
   }
 
-  // Load the proper file
-  if ($file = $method['#file']) {
-    module_load_include($file['file'], $file['module']);
+  // Load the proper file.
+  if ($file = $method['file']) {
+    // Initialize file name if not given.
+    $file += array('file name' => '');
+    module_load_include($file['file'], $file['module'], $file['file name']);
   }
 
   // Construct access arguments array
-  if (isset($method['#access arguments'])) {
-    $access_arguments = $method['#access arguments'];
-    if (isset($method['#access arguments append']) && $method['#access arguments append']) {
+  if (isset($method['access arguments'])) {
+    $access_arguments = $method['access arguments'];
+    if (isset($method['access arguments append']) && $method['access arguments append']) {
       $access_arguments[] = $args;
     }
   }
@@ -326,7 +330,7 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   }
 
   // Call default or custom access callback
-  if (call_user_func_array($method['#access callback'], $access_arguments) != TRUE) {
+  if (call_user_func_array($method['access callback'], $access_arguments) != TRUE) {
     return services_error(t('Access denied'), 401);
   }
 
@@ -337,7 +341,7 @@ function services_method_call($method_name, $args = array(), $browsing = FALSE) 
   if ($server_info) {
     chdir($server_info->drupal_path);
   }
-  $result = call_user_func_array($method['#callback'], $args);
+  $result = call_user_func_array($method['callback'], $args);
   if ($server_info) {
     chdir($server_root);
   }
@@ -388,7 +392,7 @@ function services_resource_uri($path) {
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($include_services = TRUE) {
+function services_get_all_resources($include_services = TRUE, $reset = FALSE) {
   $cache_key = 'services:resources' . ($include_services?'_with_services':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
@@ -397,21 +401,22 @@ function services_get_all_resources($include_services = TRUE) {
   else {
     $resources = module_invoke_all('service_resource');
     drupal_alter('service_resources', $resources);
+    services_strip_hashes($resources);
 
     $controllers = array();
     services_process_resources($resources, $controllers);
 
     foreach ($controllers as &$controller) {
-      if (!isset($controller['#access callback'])) {
-        $controller['#access callback'] = 'services_access_menu';
+      if (!isset($controller['access callback'])) {
+        $controller['access callback'] = 'services_access_menu';
       }
 
-      if (!isset($controller['#auth'])) {
-        $controller['#auth'] = TRUE;
+      if (!isset($controller['auth'])) {
+        $controller['auth'] = TRUE;
       }
 
-      if (!isset($controller['#key'])) {
-        $controller['#key'] = TRUE;
+      if (!isset($controller['key'])) {
+        $controller['key'] = TRUE;
       }
     }
 
@@ -434,6 +439,18 @@ function services_get_all_resources($include_services = TRUE) {
   }
 }
 
+function services_form_alter(&$form, $form_state, $form_id) {
+  if ($form_id == 'system_modules') {
+    // Add our own submit hook to clear cache
+    $form['#submit'][] = 'services_system_modules_submit';
+  }
+}
+
+function services_system_modules_submit($form, &$form_state) {
+  // Reset services cache
+  services_get_all(TRUE, TRUE);
+}
+
 function services_process_resources(&$resources, &$controllers, $path=array()) {
   foreach ($resources as $name => &$resource) {
     if (drupal_substr($name, 0, 1) != '#') {
@@ -444,54 +461,54 @@ function services_process_resources(&$resources, &$controllers, $path=array()) {
 
 function _services_process_resource($name, &$resource, &$controllers) {
   $path = join($name, '/');
-  $resource['#name'] = $path;
+  $resource['name'] = $path;
 
-  $keys = array('#retrieve','#create','#update','#delete');
+  $keys = array('retrieve', 'create', 'update', 'delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
       $controllers[$path . '/' . $key] = &$resource[$key];
     }
   }
 
-  if (isset($resource['#index'])) {
-    $controllers[$path . '/#index'] = &$resource['#index'];
+  if (isset($resource['index'])) {
+    $controllers[$path . '/index'] = &$resource['index'];
   }
 
-  if (isset($resource['#relationships'])) {
-    foreach ($resource['#relationships'] as $relname => $rel) {
+  if (isset($resource['relationships'])) {
+    foreach ($resource['relationships'] as $relname => $rel) {
       // Run some inheritance logic
-      if (isset($resource['#retrieve'])) {
-        if (empty($rel['#args']) || $rel['#args'][0]['#name'] !== $resource['#retrieve']['#args'][0]['#name']) {
-          array_unshift($rel['#args'], $resource['#retrieve']['#args'][0]);
+      if (isset($resource['retrieve'])) {
+        if (empty($rel['args']) || $rel['args'][0]['name'] !== $resource['retrieve']['args'][0]['name']) {
+          array_unshift($rel['args'], $resource['retrieve']['args'][0]);
         }
-        $resource['#relationships'][$relname] = array_merge($resource['#retrieve'], $rel);
+        $resource['relationships'][$relname] = array_merge($resource['retrieve'], $rel);
       }
-      $controllers[$path . '/relationship/' . $relname] = &$resource['#relationships'][$relname];
+      $controllers[$path . '/relationship/' . $relname] = &$resource['relationships'][$relname];
     }
   }
 
-  if (isset($resource['#actions'])) {
-    foreach ($resource['#actions'] as $actname => $act) {
+  if (isset($resource['actions'])) {
+    foreach ($resource['actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['#update'])) {
-        $up = $resource['#update'];
-        unset($up['#args']);
-        $resource['#actions'][$actname] = array_merge($up, $act);
+      if (isset($resource['update'])) {
+        $up = $resource['update'];
+        unset($up['args']);
+        $resource['actions'][$actname] = array_merge($up, $act);
       }
-      $controllers[$path . '/action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$path . '/action/' . $actname] = &$resource['actions'][$actname];
     }
   }
 
-  if (isset($resource['#targeted actions'])) {
-    foreach ($resource['#targeted actions'] as $actname => $act) {
+  if (isset($resource['targeted actions'])) {
+    foreach ($resource['targeted actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['#update'])) {
-        if (empty($act['#args']) || $act['#args'][0]['#name'] !== $resource['#update']['#args'][0]['#name']) {
-          array_unshift($act['#args'], $resource['#update']['#args'][0]);
+      if (isset($resource['update'])) {
+        if (empty($act['args']) || $act['args'][0]['name'] !== $resource['update']['args'][0]['name']) {
+          array_unshift($act['args'], $resource['update']['args'][0]);
         }
-        $resource['#targeted actions'][$actname] = array_merge($resource['#update'], $act);
+        $resource['targeted actions'][$actname] = array_merge($resource['update'], $act);
       }
-      $controllers[$path . '/targeted_action/' . $actname] = &$resource['#actions'][$actname];
+      $controllers[$path . '/targeted_action/' . $actname] = &$resource['actions'][$actname];
     }
   }
 }
@@ -510,42 +527,43 @@ function services_delegate_access($perm) {
  * @return array
  *   An array containing all services and thir methods
  */
-function services_get_all($include_resources = TRUE) {
+function services_get_all($include_resources = TRUE, $reset = FALSE) {
   $cache_key = 'services:methods' . ($include_resources?'_with_resources':'');
 
-  if (($cache = cache_get($cache_key)) && isset($cache->data)) {
+  if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
   }
   else {
     $methods = module_invoke_all('service');
+    services_strip_hashes($methods);
 
     foreach ($methods as $key => $method) {
 
-      if (!isset($methods[$key]['#access callback'])) {
-        $methods[$key]['#access callback'] = 'services_access_menu';
+      if (!isset($methods[$key]['access callback'])) {
+        $methods[$key]['access callback'] = 'services_access_menu';
       }
 
-      if (!isset($methods[$key]['#args'])) {
-        $methods[$key]['#args'] = array();
+      if (!isset($methods[$key]['args'])) {
+        $methods[$key]['args'] = array();
       }
 
       // set defaults for args
-      foreach ($methods[$key]['#args'] as $arg_key => $arg) {
+      foreach ($methods[$key]['args'] as $arg_key => $arg) {
         if (is_array($arg)) {
-          if (!isset($arg['#optional'])) {
-            $methods[$key]['#args'][$arg_key]['#optional'] = FALSE;
+          if (!isset($arg['optional'])) {
+            $methods[$key]['args'][$arg_key]['optional'] = FALSE;
           }
         }
         else {
           $arr_arg = array();
-          $arr_arg['#name'] = t('unnamed');
-          $arr_arg['#type'] = $arg;
-          $arr_arg['#description'] = t('No description given.');
-          $arr_arg['#optional'] = FALSE;
-          $methods[$key]['#args'][$arg_key] = $arr_arg;
+          $arr_arg['name'] = t('unnamed');
+          $arr_arg['type'] = $arg;
+          $arr_arg['description'] = t('No description given.');
+          $arr_arg['optional'] = FALSE;
+          $methods[$key]['args'][$arg_key] = $arr_arg;
         }
       }
-      reset($methods[$key]['#args']);
+      reset($methods[$key]['args']);
     }
 
     // Allow auth module to alter the methods
@@ -553,7 +571,7 @@ function services_get_all($include_resources = TRUE) {
 
     // Add resources if wanted
     if ($include_resources) {
-      $resources = services_get_all_resources(FALSE);
+      $resources = services_get_all_resources(FALSE, $reset);
 
       // Include the file that has the necessary functions for translating
       // resources to method calls.
@@ -586,13 +604,28 @@ function services_method_get($method_name) {
   static $method_cache;
   if (!isset($method_cache[$method_name])) {
     foreach (services_get_all() as $method) {
-      if ($method_name == $method['#method']) {
+      if ($method_name == $method['method']) {
         $method_cache[$method_name] = $method;
         break;
       }
     }
   }
   return $method_cache[$method_name];
+}
+
+/**
+ * Cleanup function to remove unnecessary hashes from service definitions.
+ */
+function services_strip_hashes(&$array) {
+  foreach ($array as $key => $value) {
+    if (is_array($value)) {
+      services_strip_hashes($array[$key]);
+    }
+    if (strpos($key, '#') === 0) {
+      $array[substr($key, 1)] = $array[$key];
+      unset($array[$key]);
+    }
+  }
 }
 
 /**

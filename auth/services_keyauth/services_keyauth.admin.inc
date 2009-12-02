@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.admin.inc,v 1.1.2.2.2.2 2009/08/08 02:55:05 marcingy Exp $
+// $Id: services_keyauth.admin.inc,v 1.1.2.2.2.3 2009/11/04 21:37:01 heyrocker Exp $
 
 /**
  * @file
@@ -81,7 +81,7 @@ function services_keyauth_admin_keys_form() {
   
   $methods = services_get_all();
   foreach ($methods as $method) {
-    $form_methods[$method['#method']] = $method['#method'];
+    $form_methods[$method['method']] = $method['method'];
   }
 
   $form['method_access'] = array(

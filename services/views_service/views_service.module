@@ -1,5 +1,5 @@
 <?php
-// $Id: views_service.module,v 1.4.2.20 2009/05/18 20:55:22 marcingy Exp $
+// $Id: views_service.module,v 1.4.2.20.2.2 2009/11/27 16:51:00 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -36,10 +36,10 @@ function views_service_service() {
           '#description'    => t('View name.')
         ),
         array(
-          '#name'           => 'fields',
-          '#type'           => 'array',
+          '#name'           => 'display_id',
+          '#type'           => 'string',
           '#optional'       => TRUE,
-          '#description'    => t('A list of fields to return.')
+          '#description'    => t('A display provided by the selected view.')
         ),
         array(
           '#name'           => 'args',
@@ -51,13 +51,19 @@ function views_service_service() {
           '#name'           => 'offset',
           '#type'           => 'int',
           '#optional'       => TRUE,
-          '#description'    => t('An offset integer for paging.')
+          '#description'    => t('An offset integer for paging. If this is set limit will be ignored.')
         ),
         array(
           '#name'           => 'limit',
           '#type'           => 'int',
           '#optional'       => TRUE,
-          '#description'    => t('A limit integer for paging.')
+          '#description'    => t('A limit integer for paging. If offset is set, this will be ignored.')
+        ),
+        array(
+          '#name'           => 'format_output',
+          '#type'           => 'boolean',
+          '#optional'       => TRUE,
+          '#description'    => t('TRUE if view should be formatted, or only the view result returned (FALSE by default).')
         ),
       ),
       '#return'           => 'array',
@@ -106,12 +112,4 @@ function views_service_service() {
       '#help'             => t('Imports a view through code, equivalent to using the Import tab in the views admin.'),
     ),
   );
-}
-
-function views_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function views_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

@@ -1,5 +1,5 @@
 <?php
-// $Id: search_service.module,v 1.1.4.19 2009/05/20 01:53:15 marcingy Exp $
+// $Id: search_service.module,v 1.1.4.19.2.1 2009/10/15 03:54:05 marcingy Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -118,12 +118,4 @@ function search_service_service() {
       '#help'     => t('Searches users according to keys via hook_search.'),
     )
   );
-}
-
-function search_service_disable() {
-  cache_clear_all('services:methods', 'cache');
-}
-
-function search_service_enable() {
-  cache_clear_all('services:methods', 'cache');
 }

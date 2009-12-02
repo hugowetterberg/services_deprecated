@@ -123,6 +123,13 @@ function _services_edit_endpoint_title($title, $endpoint) {
 }
 
 /**
+ * Access callback that always returns TRUE.
+ */
+function services_access_menu() {
+  return TRUE;
+}
+
+/**
  * Implementation of hook_theme().
  */
 function services_theme() {
@@ -168,9 +175,19 @@ function services_get_servers() {
 }
 
 /**
- * Callback for server endpoint
+ * Menu system page callback for server endpoints.
+ *
+ * @param string $server
+ *  The server that's used at the endpoint.
+ * @param string $endpoint
+ *  The endpoint name.
+ * @param string $endpoint_path
+ *  The path to the endpoint.
+ * @return void
  */
-function services_server($server, $endpoint, $endpoint_path, $path) {
+function services_server($server, $endpoint, $endpoint_path) {
+  module_load_include('inc', 'services', 'includes/runtime');
+
   if (function_exists($server . '_server')) {
     // call the server
     services_set_server_info_from_array(array(
@@ -308,6 +325,15 @@ function services_server_info_object($reset = FALSE) {
 
 /**
  * Prepare an error message for returning to the server.
+ *
+ * @param string $message
+ *  Error message.
+ * @param int $code
+ *  Optional. Error code. This often maps to the HTTP status codes. Defaults
+ *  to 0.
+ * @param Exception $exception
+ *  Optional. The exception, if any, that was thrown when the error occured.
+ * @return mixed
  */
 function services_error($message, $code = 0, $exception = NULL) {
   $server_module = services_get_server_info('module');
@@ -356,28 +382,22 @@ function services_auth_info($property = NULL, $module = NULL) {
   return $info[$module];
 }
 
-function services_auth_invoke($method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NULL) {
-  $module = variable_get('services_auth_module', '');
-  // Get information about the current auth module
-  $func = services_auth_info($method, $module);
-  if ($func) {
-    if ($file = services_auth_info('file')) {
-      require_once(drupal_get_path('module', $module) . '/' . $file);
-    }
-
-    if (is_callable($func)) {
-      $args = func_get_args();
-      // Replace method name and arg1 with reference to $arg1 and $arg2.
-      array_splice($args, 0, 3, array(&$arg1, &$arg2, &$arg3));
-      return call_user_func_array($func, $args);
-    }
-  }
-  else{
-    return TRUE;
-  }
-}
-
-function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NULL) {
+/**
+ * Invokes a authentication module callback.
+ *
+ * @param string $module
+ *  The authentication module to invoke the callback for.
+ * @param string $method
+ *  The callback to invoke.
+ * @param string $arg1
+ *  Optional. First argument to pass to the callback.
+ * @param string $arg2
+ *  Optional. Second argument to pass to the callback.
+ * @param string $arg3
+ *  Optional. Third argument to pass to the callback.
+ * @return mixed
+ */
+function services_auth_invoke($module, $method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NULL) {
   // Get information about the auth module
   $func = services_auth_info($method, $module);
   if ($func) {
@@ -428,7 +448,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
     $endpoint_name = services_get_server_info('endpoint');
     $endpoint = services_get_endpoint($endpoint_name);
 
-    if ($auth_error = services_auth_invoke_custom($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
+    if ($auth_error = services_auth_invoke($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
       return services_error($auth_error, 401);
     }
   }
@@ -530,6 +550,9 @@ function services_write_endpoint($definition) {
     ':endpoint' => $definition['endpoint'],
   ))) ? array('endpoint') : NULL;
   drupal_write_record('services_endpoint', $definition, $update);
+
+  // Clear the cache for the endpoint
+  cache_clear_all('services:' . $definition['endpoint'] . ':', 'cache', TRUE);
 }
 
 /**
@@ -617,285 +640,140 @@ function _services_endpoint_from_result($row) {
  * Gets all resource definitions.
  *
  * @param string $endpoint_name
- *   Optional. The endpoint endpoint that's being used. Defaults to NULL.
+ *   Optional. The endpoint endpoint that's being used.
  * @return array
  *  An array containing all resources.
  */
-function services_get_all_resources($endpoint_name=NULL) {
-  $cache_key = empty($endpoint_name) ? 'services:resources' : 'services:' . $endpoint_name . ':resources';
+function services_get_resources($endpoint_name='') {
+  $cache_key = 'services:' . $endpoint_name . ':resources';
 
+  $resources = array();
   if (($cache = cache_get($cache_key)) && isset($cache->data)) {
-    return $cache->data;
+    $resources = $cache->data;
   }
   else {
-    // Get all installed resources
-    $resources = module_invoke_all('services_resources');
-
-    $endpoint = NULL;
-    if (!empty($endpoint_name)) {
-      // Load the endpoint
-      $endpoint = services_get_endpoint($endpoint_name);
-      // Apply the endpoint on the services
-      services_apply_endpoint($resources, $endpoint, TRUE);
-    }
-
-    drupal_alter('services_resources', $resources, $endpoint);
-
-    $controllers = array();
-    services_process_resources($resources, $controllers);
-
-    // Make sure that we got a access callback for all resources
-    foreach ($controllers as &$controller) {
-      if (!isset($controller['access callback'])) {
-        $controller['access callback'] = 'services_access_menu';
-      }
-    }
-
-    drupal_alter('services_resources_post_processing', $resources, $endpoint);
-
-    // Do some endpoint-dependent processing
-    if ($endpoint) {
-      // Let the authentication module alter our controllers
-      if (!empty($endpoint['authentication'])) {
-        services_auth_invoke_custom($endpoint['authentication'], 'alter_controllers', $controllers, $endpoint);
-      }
-
-      // Apply any aliases from endpoint
-      if (!empty($endpoint))
-      $aliased = array();
-      foreach ($resources as $key => $def) {
-        if (!empty($def['endpoint']['alias'])) {
-          $aliased[$def['endpoint']['alias']] = $def;
-        }
-        else {
-          $aliased[$key] = $def;
-        }
-      }
-      $resources = $aliased;
-    }
-
+    module_load_include('inc', 'services', 'includes/resource_build');
+    $resources = _services_build_resources($endpoint_name);
     cache_set($cache_key, $resources);
-    return $resources;
   }
+
+  return $resources;
 }
 
 /**
- * Applies the endpoint to a set of resources. Resources and controllers that
- * aren't supported will be removed (if $strict is set to TRUE) and both
- * resources and controllers will get the 'endpoint' attribute set.
- *
- * @param array $resources
- *  An array of resources that the endpoint should be applied on.
- * @param array $endpoint
- *  A endpoint information array.
- * @param bool $strict
- *  Optional. 
- * @return void
+ * Implementation of hook_services_resources().
  */
-function services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
-  foreach ($resources as $name => &$resource) {
-    $cres = $endpoint && isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
-    $resource['endpoint'] = $cres;
+function services_services_resources() {
+  module_load_include('inc', 'services', 'includes/resource_build');
+  // Return resources representing legacy services
+  return _services_legacy_services_as_resources();
+}
 
-    if ($strict && empty($cres)) {
-      unset($resources[$name]);
+/**
+ * Returns all the controller names for a endpoint.
+ *
+ * @param string $endpoint
+ *  The endpoint that should be used.
+ * @param array $names
+ *  An array of prefixes to use for 'actions', 'relationships' and 'targeted
+ *  actions'. The default mapping is 'actions'=>'do', 'relationships'=>'get'
+ *  and 'targeted actions'=>'set'.
+ * @param bool $key_by_resource
+ *  Optional. Set to TRUE to get controllers separated by resource.
+ * @return array
+ *  Either a non associative array containing all controller names. Or, if
+ *  $key_by_resource was set to TRUE, a associative array where the resource
+ *  name is the key and the value is a non-associative array containing the
+ *  resource's controller names.
+ */
+function services_controllers_list($endpoint, $prefixes = array(), $key_by_resource=FALSE) {
+  $controllers = array();
+  $prefixes = array_merge(
+    array(
+      'actions' => 'do',
+      'relationships' => 'get',
+      'targeted actions' => 'set',
+    ), $prefixes);
+  $resources = services_get_resources($endpoint);
+
+  foreach ($resources as $resource_name => $res) {
+    // Get all basic operations
+    foreach (array('create', 'retrieve', 'update', 'delete', 'index') as $op) {
+      if (isset($res[$op])) {
+        $controllers[] = $resource_name . '.' . $op;
+      }
     }
-    else {
-      $crud = array('create', 'retrieve', 'update', 'delete', 'index');
-      foreach ($crud as $op) {
-        $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
-        $resource[$op]['endpoint'] = $cop;
-        if ($strict && empty($cop)) {
-          unset($resource['' . $op]);
+    foreach ($prefixes as $op => $prefix) {
+      if (isset($res[$op])) {
+        foreach ($res['op'] as $name => $def) {
+          // Append prefix if it isn't empty
+          if (!empty($prefix)) {
+            $name = $prefix . '_' . $name;
+          }
+          $controllers[] = $resource_name . '.' . $name;
         }
       }
+    }
+  }
+  return $controllers;
+}
 
-      $classes = array('targeted actions', 'actions', 'relationships');
-      foreach ($classes as $class) {
-        if (!empty($resource[$class])) {
-          foreach ($resource[$class] as $op => $def) {
-            $cop = isset($cres[$class][$op]) ? $cres[$class][$op] : array();
-            if (empty($cop)) {
-              if ($strict) {
-                unset($resource['' . $op]);
-              }
-            }
-            else {
-              $resource[$class][$op]['endpoint'] = $cop;
-            }
+/**
+ * Returns the requested controller.
+ *
+ * @param string $name
+ *  The name of the controller in the format: {resource}.{prefix}_{name} or
+ *  {resource}.{operation}. Examples: "node.retrieve", "node.create",
+ *  "node.get_comments" and "node.set_publish".
+ * @param string $endpoint
+ *  The endpoint that should be used.
+ * @param array $names
+ *  An array of prefixes to use for 'actions', 'relationships' and 'targeted
+ *  actions'. The default mapping is 'actions'=>'do', 'relationships'=>'get'
+ *  and 'targeted actions'=>'set'.
+ */
+function services_controller_get($name, $endpoint, $prefixes = array()) {
+  list($resource_name, $method) = explode('.', $name);
+  $controller = FALSE;
+
+  $resources = services_get_resources($endpoint);
+
+  if (isset($resources[$resource_name])) {
+    $res = $resources[$resource_name];
+    $qual = explode('_', $method, 2);
+
+    if (count($qual) == 1) {
+      switch ($qual[0]) {
+        case 'create':
+        case 'retrieve':
+        case 'update':
+        case 'delete':
+        case 'index':
+          if (isset($res[$qual[0]])) {
+            $controller = $res[$qual[0]];
+          }
+          break;
+      }
+    }
+    else if (count($qual) == 2) {
+      // Set up names with default values
+      $prefixes = array_merge(
+        array(
+          'actions' => 'do',
+          'relationships' => 'get',
+          'targeted actions' => 'set',
+        ), $prefixes);
+
+      // Find a matching controller
+      foreach ($prefixes as $op => $prefix) {
+        if ($qual[0] == $prefix) {
+          if (isset($res[$op]) && isset($res[$op][$qual[1]])) {
+            $controller = $res[$op][$qual[1]];
+            break;
           }
         }
       }
     }
   }
+  return $controller;
 }
-
-function services_process_resources(&$resources, &$controllers, $path=array()) {
-  foreach ($resources as $name => &$resource) {
-    _services_process_resource($name, $resource, $controllers);
-  }
-}
-
-/**
- * Process resource runs through all the controllers of a resource and applies
- * some inheritance logic and adds the to the $controllers array.
- *
- * @param string $name
- *  The name of the resource
- * @param array &$resource
- *  The resource definition
- * @param array &$controllers
- *  An that will be fillew with all the controllers for the resource.
- * @return void
- */
-function _services_process_resource($name, &$resource, &$controllers) {
-  $resource['name'] = $name;
-
-  $keys = array('retrieve','create','update','delete');
-  foreach ($keys as $key) {
-    if (isset($resource[$key])) {
-      $controllers[$name . '/' . $key] = &$resource[$key];
-    }
-  }
-
-  if (isset($resource['index'])) {
-    $controllers[$name . '/index'] = &$resource['index'];
-  }
-
-  if (isset($resource['relationships'])) {
-    foreach ($resource['relationships'] as $relname => $rel) {
-      // Run some inheritance logic
-      if (isset($resource['retrieve'])) {
-        if (empty($rel['args']) || $rel['args'][0]['name'] !== $resource['retrieve']['args'][0]['name']) {
-          array_unshift($rel['args'], $resource['retrieve']['args'][0]);
-        }
-        $resource['relationships'][$relname] = array_merge($resource['retrieve'], $rel);
-      }
-      $controllers[$name . '/relationship/' . $relname] = &$resource['relationships'][$relname];
-    }
-  }
-
-  if (isset($resource['actions'])) {
-    foreach ($resource['actions'] as $actname => $act) {
-      // Run some inheritance logic
-      if (isset($resource['update'])) {
-        $up = $resource['update'];
-        unset($up['args']);
-        $resource['actions'][$actname] = array_merge($up, $act);
-      }
-      $controllers[$name . '/action/' . $actname] = &$resource['actions'][$actname];
-    }
-  }
-
-  if (isset($resource['targeted actions'])) {
-    foreach ($resource['targeted actions'] as $actname => $act) {
-      // Run some inheritance logic
-      if (isset($resource['update'])) {
-        if (empty($act['args']) || $act['args'][0]['name'] !== $resource['update']['args'][0]['name']) {
-          array_unshift($act['args'], $resource['update']['args'][0]);
-        }
-        $resource['targeted actions'][$actname] = array_merge($resource['update'], $act);
-      }
-      $controllers[$name . '/targeted_action/' . $actname] = &$resource['actions'][$actname];
-    }
-  }
-}
-
-function services_method_get($method_name, $endpoint='') {
-  // TODO: This function must be rewritten to support the resource model
-}
-
-/**
- * Make any changes we might want to make to node.
- */
-function services_node_load($node, $fields = array()) {
-  if (!isset($node->nid)) {
-    return NULL;
-  }
-
-  // Loop through and get only requested fields
-  if (count($fields) > 0) {
-    foreach ($fields as $field) {
-      $val->{$field} = $node->{$field};
-    }
-  }
-  else {
-    $val = $node;
-  }
-
-  return $val;
-}
-
-/**
- * Backup current session data and import user session.
- */
-function services_session_load($sessid) {
-  global $user;
-
-  // If user's session is already loaded, just return current user's data
-  if ($user->sid == $sessid) {
-    return $user;
-  }
-
-  // Make backup of current user and session data
-  $backup = $user;
-  $backup->session = session_encode();
-
-  // Empty current session data
-  $_SESSION = array();
-
-  // Some client/servers, like XMLRPC, do not handle cookies, so imitate it to make sess_read() function try to look for user,
-  // instead of just loading anonymous user :).
-  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $sessid;
-
-  // Load session data
-  session_id($sessid);
-  sess_read($sessid);
-
-  // Check if it really loaded user and, for additional security, if user was logged from the same IP. If not, then revert automatically.
-  if ($user->sid != $sessid) {
-    services_session_unload($backup);
-    return NULL;
-  }
-
-  // Prevent saving of this impersonation in case of unexpected failure.
-  session_save_session(FALSE);
-
-  return $backup;
-}
-
-/**
- * Revert to previously backuped session.
- */
-function services_session_unload($backup) {
-  global $user;
-
-  // No point in reverting if it's the same user's data
-  if ($user->sid == $backup->sid) {
-    return;
-  }
-
-  // Some client/servers, like XMLRPC, do not handle cookies, so imitate it to make sess_read() function try to look for user,
-  // instead of just loading anonymous user :).
-  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $backup->sessid;
-
-  // Save current session data
-  sess_write($user->sid, session_encode());
-
-  // Empty current session data
-  $_SESSION = array();
-
-  // Revert to previous user and session data
-  $user = $backup;
-  session_id($backup->sessid);
-  session_decode($user->session);
-
-  session_save_session(TRUE);
-}
-
-/**
- * Return true so as services menu callbacks work
- */
-function services_access_menu() {
-  return TRUE;
-} 

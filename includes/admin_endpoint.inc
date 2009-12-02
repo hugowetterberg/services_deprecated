@@ -1,6 +1,12 @@
 <?php
 // $Id$
 
+/**
+ * @file
+ *  The endpoint administration form and page callbacks and their supporting
+ *  functions.
+ */
+
 function services_admin_endpoint_index() {
   return theme('services_endpoint_index', services_get_endpoints());
 }
@@ -160,7 +166,7 @@ function _services_admin_endpoint_form($endpoint_name=NULL) {
 
   // Get the configuration form for the authorization module
   if (!empty($endpoint['authentication'])) {
-    $settings = services_auth_invoke_custom($endpoint['authentication'], 'security_settings', $endpoint['authentication_settings']);
+    $settings = services_auth_invoke($endpoint['authentication'], 'security_settings', $endpoint['authentication_settings']);
     if (is_array($settings)) {
       $form['authentication_settings']['settings'] = $settings;
     }
@@ -175,6 +181,7 @@ function _services_admin_endpoint_form($endpoint_name=NULL) {
 }
 
 function services_admin_endpoint_resources($form_state, $endpoint_name) {
+  module_load_include('inc', 'services', 'includes/resource_build');
   $endpoint = services_get_endpoint($endpoint_name);
   $form = array();
 
@@ -191,8 +198,12 @@ function services_admin_endpoint_resources($form_state, $endpoint_name) {
     'index' => t('Index'),
   );
 
-  $resources = services_get_all_resources();
-  services_apply_endpoint($resources, $endpoint, FALSE);
+  // Call _services_build_resources() directly instead of
+  // services_get_resources to bypass caching.
+  $resources = _services_build_resources();
+  // Apply the endpoint in a non-strict mode, so that the non-active resources
+  // are preserved.
+  _services_apply_endpoint($resources, $endpoint, FALSE);
 
   $res = array(
     '#tree' => TRUE,
@@ -397,7 +408,7 @@ function _services_ahah_security_options() {
   $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
 
   if (!empty($_POST['authentication'])) {
-    $settings = services_auth_invoke_custom($_POST['authentication'], 'security_settings');
+    $settings = services_auth_invoke($_POST['authentication'], 'security_settings');
   }
 
   if (is_array($settings)) {

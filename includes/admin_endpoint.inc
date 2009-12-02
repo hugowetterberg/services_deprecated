@@ -69,6 +69,8 @@ function services_admin_endpoint_edit_submit($form, $form_state) {
 }
 
 function _services_admin_endpoint_form($endpoint_name=NULL) {
+  module_load_include('inc', 'services', 'includes/runtime');
+
   if (!empty($endpoint_name)) {
     $endpoint = services_get_endpoint($endpoint_name);
   }

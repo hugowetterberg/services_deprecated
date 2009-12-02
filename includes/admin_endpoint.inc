@@ -37,6 +37,8 @@ function services_admin_endpoint_add_submit($form, $form_state) {
   }
 
   services_write_endpoint($endpoint);
+  // Rebuild the menu to get the menu item for the callback registered.
+  menu_rebuild();
   drupal_set_message('The endpoint has been created', 'info');
   drupal_goto(sprintf('admin/build/services/endpoints/%s/resources', $endpoint['endpoint']));
 }
@@ -49,6 +51,7 @@ function services_admin_endpoint_edit_submit($form, $form_state) {
   $values = $form_state['values'];
   $values['authentication_settings'] = $values['authentication_settings']['settings'];
   $endpoint = services_get_endpoint($values['endpoint']);
+  $original_path = $endpoint['path'];
 
   foreach (element_children($form) as $name) {
     $info = $form[$name];
@@ -59,6 +62,10 @@ function services_admin_endpoint_edit_submit($form, $form_state) {
 
   drupal_set_message('The endpoint has been updated', 'info');
   services_write_endpoint($endpoint);
+  // Rebuild the menu if the endpoint path has been changed.
+  if ($endpoint['path'] !== $original_path) {
+    menu_rebuild();
+  }
 }
 
 function _services_admin_endpoint_form($endpoint_name=NULL) {

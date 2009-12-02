@@ -103,8 +103,8 @@ function services_menu() {
     $items[$endpoint['path']] = array(
       'title'             => 'Services endpoint',
       'access callback'   => 'services_access_menu',
-      'page callback'     => 'services_server',
-      'page arguments'    => array($endpoint['server'], $name, $endpoint['path']),
+      'page callback'     => 'services_endpoint_callback',
+      'page arguments'    => array($name),
       'type'              => MENU_CALLBACK,
     );
   }
@@ -177,27 +177,26 @@ function services_get_servers() {
 /**
  * Menu system page callback for server endpoints.
  *
- * @param string $server
- *  The server that's used at the endpoint.
  * @param string $endpoint
  *  The endpoint name.
- * @param string $endpoint_path
- *  The path to the endpoint.
  * @return void
  */
-function services_server($server, $endpoint, $endpoint_path) {
+function services_endpoint_callback($endpoint_name) {
   module_load_include('inc', 'services', 'includes/runtime');
+
+  $endpoint = services_get_endpoint($endpoint_name);
+  $server = $endpoint['server'];
 
   if (function_exists($server . '_server')) {
     // call the server
     services_set_server_info_from_array(array(
       'module' => $server,
-      'endpoint' => $endpoint,
-      'endpoint_path' => $endpoint_path,
+      'endpoint' => $endpoint_name,
+      'endpoint_path' => $endpoint['path'],
       'drupal_path' => getcwd(),
     ));
 
-    print call_user_func($server . '_server', $endpoint, $endpoint_path);
+    print call_user_func($server . '_server');
 
     // Do not let this output
     module_invoke_all('exit');

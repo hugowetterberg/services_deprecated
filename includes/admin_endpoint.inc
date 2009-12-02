@@ -413,6 +413,8 @@ function _services_resource_operation_settings(&$settings, $endpoint, $resource,
  * Callback for the security configuration form ahah.
  */
 function _services_ahah_security_options() {
+  module_load_include('inc', 'services', 'includes/runtime');
+
   $cached_form_state = array();
   $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
 

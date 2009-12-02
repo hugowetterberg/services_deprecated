@@ -45,14 +45,14 @@ function services_menu() {
     'file'              => 'includes/admin_endpoint.inc',
   );
   $items['admin/build/services/endpoints'] = array(
-    'title'             => 'endpoints',
-    'description'       => 'Administer the different services endpoints.',
+    'title'             => 'List',
+    'description'       => 'Administer the different Services endpoints.',
     'type'              => MENU_DEFAULT_LOCAL_TASK,
     'weight'            => -10,
   );
   $items['admin/build/services/endpoint-add'] = array(
     'title'             => 'Add endpoint',
-    'description'       => 'Add a services endpoint.',
+    'description'       => 'Add an endpoint.',
     'page callback'     => 'drupal_get_form',
     'page arguments'    => array('services_admin_endpoint_add'),
     'access arguments'  => array('administer services'),
@@ -62,7 +62,7 @@ function services_menu() {
   $items['admin/build/services/endpoints/%'] = array(
     'title callback'    => '_services_edit_endpoint_title',
     'title arguments'   => array('Edit !title', 4),
-    'description'       => 'Edit a endpoint.',
+    'description'       => 'Edit an endpoint.',
     'page callback'     => 'drupal_get_form',
     'page arguments'    => array('services_admin_endpoint_edit', 4),
     'access arguments'  => array('administer services'),

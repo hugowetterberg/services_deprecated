@@ -42,117 +42,63 @@ function services_menu() {
     'file'             => 'services.admin.inc',
   );
 
-  $items['admin/build/services2'] = array(
+  $items['admin/build/services'] = array(
     'title'          => 'Services',
     'description'    => 'Manage how external applications communicates with Drupal.',
     'page callback'  => 'services_list_endpoint',
   ) + $base;
-  $items['admin/build/services2/list'] = array(
+  $items['admin/build/services/list'] = array(
     'title'          => 'List',
     'page callback'  => 'services_list_endpoint',
     'type'           => MENU_DEFAULT_LOCAL_TASK,
     'weight'         => -10,
   ) + $base;
-  $items['admin/build/services2/add'] = array(
+  $items['admin/build/services/add'] = array(
     'title'          => 'Add endpoint',
     'page callback'  => 'services_add_endpoint',
     'type'           => MENU_LOCAL_TASK,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/edit'] = array(
+  $items['admin/build/services/%services_endpoint/edit'] = array(
     'title'          => 'Edit endpoint',
     'page callback'  => 'services_edit_endpoint',
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/resources'] = array(
+  $items['admin/build/services/%services_endpoint/resources'] = array(
     'title'          => 'Resources',
     'page callback'  => 'services_edit_endpoint_resources',
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
     'weight'         => 10,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/export'] = array(
+  $items['admin/build/services/%services_endpoint/export'] = array(
     'title'          => 'Export endpoint',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('services_export_endpoint', 3),
     'type'           => MENU_LOCAL_TASK,
     'weight'         => 20,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/delete'] = array(
+  $items['admin/build/services/%services_endpoint/delete'] = array(
     'title'          => 'Delete endpoint',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('services_delete_confirm_endpoint', 3),
     'type'           => MENU_CALLBACK,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/disable'] = array(
+  $items['admin/build/services/%services_endpoint/disable'] = array(
     'page callback'  => 'services_disable_endpoint',
     'page arguments' => array(3),
     'type'           => MENU_CALLBACK,
   ) + $base;
-  $items['admin/build/services2/%services_endpoint/enable'] = array(
+  $items['admin/build/services/%services_endpoint/enable'] = array(
     'page callback'  => 'services_enable_endpoint',
     'page arguments' => array(3),
     'type'           => MENU_CALLBACK,
   ) + $base;
-  $items['admin/build/services2/ahah/security-options'] = array(
+  $items['admin/build/services/ahah/security-options'] = array(
     'page callback' => '_services_ahah_security_options',
     'type'          => MENU_CALLBACK,
   ) + $base;
 
-  $items['admin/build/services'] = array(
-    'title'             => 'Services',
-    'description'       => 'Allows external applications to communicate with Drupal.',
-    'access arguments'  => array('administer services'),
-    'page callback'     => 'services_admin_endpoint_index',
-    'file'              => 'includes/admin_endpoint.inc',
-  );
-  $items['admin/build/services/endpoints'] = array(
-    'title'             => 'List',
-    'description'       => 'Administer the different Services endpoints.',
-    'type'              => MENU_DEFAULT_LOCAL_TASK,
-    'weight'            => -10,
-  );
-  $items['admin/build/services/endpoint-add'] = array(
-    'title'             => 'Add endpoint',
-    'description'       => 'Add an endpoint.',
-    'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_endpoint_add'),
-    'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_endpoint.inc',
-    'type'              => MENU_LOCAL_TASK,
-  );
-  $items['admin/build/services/endpoints/%'] = array(
-    'title callback'    => '_services_edit_endpoint_title',
-    'title arguments'   => array('Edit !title', 4),
-    'description'       => 'Edit an endpoint.',
-    'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_endpoint_edit', 4),
-    'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_endpoint.inc',
-    'type'              => MENU_CALLBACK,
-    'weight'            => -10,
-  );
-  $items['admin/build/services/endpoints/%/edit'] = array(
-    'title'             => 'Edit',
-    'description'       => 'Edit the endpoint.',
-    'type'              => MENU_DEFAULT_LOCAL_TASK,
-    'weight'            => -10,
-  );
-  $items['admin/build/services/endpoints/%/resources'] = array(
-    'title'             => 'Resources',
-    'description'       => 'Edit the resource settings for the endpoint.',
-    'page callback'     => 'drupal_get_form',
-    'page arguments'    => array('services_admin_endpoint_resources', 4),
-    'access arguments'  => array('administer services'),
-    'file'              => 'includes/admin_endpoint.inc',
-    'type'              => MENU_LOCAL_TASK,
-  );
-  $items['admin/services/ahah/security-options'] = array(
-    'file'              => 'includes/admin_endpoint.inc',
-    'page callback'     => '_services_ahah_security_options',
-    'access arguments'  => array('administer services'),
-    'type'              => MENU_CALLBACK,
-  );
   $items['crossdomain.xml'] = array(
     'access callback'   => 'services_access_menu',
     'page callback'     => 'services_crossdomain_xml',
@@ -244,7 +190,7 @@ function services_get_servers() {
  * @return void
  */
 function services_endpoint_callback($endpoint_name) {
-  module_load_include('inc', 'services', 'includes/runtime');
+  module_load_include('runtime.inc', 'services');
 
   $endpoint = services_get_endpoint($endpoint_name);
   $server = $endpoint['server'];
@@ -540,7 +486,7 @@ function services_get_resources($endpoint_name='') {
     $resources = $cache->data;
   }
   else {
-    module_load_include('inc', 'services', 'includes/resource_build');
+    module_load_include('resource_build.inc', 'services');
     $resources = _services_build_resources($endpoint_name);
     cache_set($cache_key, $resources);
   }
@@ -552,7 +498,7 @@ function services_get_resources($endpoint_name='') {
  * Implementation of hook_services_resources().
  */
 function services_services_resources() {
-  module_load_include('inc', 'services', 'includes/resource_build');
+  module_load_include('resource_build.inc', 'services');
   // Return resources representing legacy services
   return _services_legacy_services_as_resources();
 }

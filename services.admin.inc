@@ -30,37 +30,37 @@ function services_list_endpoint($js = NULL) {
     if (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Edit'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/edit',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/edit',
       );
       $operations[] = array(
         'title' => t('Export'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/export',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/export',
       );
     }
 
     if ($endpoint->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
       $operations[] = array(
         'title' => t('Revert'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/delete',
       );
     }
     elseif ($endpoint->export_type != EXPORT_IN_CODE) {
       $operations[] = array(
         'title' => t('Delete'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/delete',
       );
     }
     elseif (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Disable'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/disable',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/disable',
         'query' => drupal_get_destination(),
       );
     }
     else {
       $operations[] = array(
         'title' => t('Enable'),
-        'href'  => 'admin/build/services2/' . $endpoint->endpoint . '/enable',
+        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/enable',
         'query' => drupal_get_destination(),
       );
     }
@@ -132,7 +132,7 @@ function services_edit_endpoint($endpoint) {
  */
 function services_edit_form_endpoint(&$form_state, $endpoint) {
   // Loading runtime include as needed by services_auth_info().
-  module_load_include('inc', 'services', 'includes/runtime');
+  module_load_include('runtime.inc', 'services');
 
   $form = array();
 
@@ -206,7 +206,7 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
     '#description'   => t('Choose an authentication scheme should be used with your endpoint.'),
     '#required'      => FALSE,
     '#ahah'          => array(
-      'path'    => 'admin/build/services2/ahah/security-options',
+      'path'    => 'admin/build/services/ahah/security-options',
       'wrapper' => 'security-module-options',
       'method'  => 'replace',
     ),
@@ -286,7 +286,7 @@ function services_edit_form_endpoint_submit($form, &$form_state) {
     services_endpoint_save($endpoint);
   }
 
-  $form_state['redirect'] = 'admin/build/services2';
+  $form_state['redirect'] = 'admin/build/services';
 }
 
 /**
@@ -333,7 +333,7 @@ function services_delete_confirm_endpoint(&$form_state, $endpoint) {
   $form['eid']      = array('#type' => 'value', '#value' => $endpoint->eid);
   return confirm_form($form,
     $title,
-    !empty($_GET['destination']) ? $_GET['destination'] : 'admin/build/services2',
+    !empty($_GET['destination']) ? $_GET['destination'] : 'admin/build/services',
     t('This action cannot be undone.'),
     $submit, t('Cancel')
   );
@@ -346,7 +346,7 @@ function services_delete_confirm_endpoint_submit($form, &$form_state) {
   $endpoint = services_endpoint_load($form_state['values']['endpoint']);
   if ($endpoint->eid == $form_state['values']['eid']) {
     services_endpoint_delete($endpoint);
-    $form_state['redirect'] = 'admin/build/services2';
+    $form_state['redirect'] = 'admin/build/services';
   }
 }
 
@@ -390,7 +390,7 @@ function services_edit_endpoint_resources($endpoint) {
  * Form to add resources to an endpoint.
  */
 function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
-  module_load_include('inc', 'services', 'includes/resource_build');
+  module_load_include('resource_build.inc', 'services');
 
   $form = array();
 
@@ -613,7 +613,7 @@ function _services_resource_operation_settings(&$settings, $endpoint, $resource,
  * Callback for the security configuration form ahah.
  */
 function _services_ahah_security_options() {
-  module_load_include('inc', 'services', 'includes/runtime');
+  module_load_include('runtime.inc', 'services');
 
   $cached_form_state = array();
   $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);

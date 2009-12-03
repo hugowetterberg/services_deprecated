@@ -14,7 +14,19 @@ function services_schema() {
 
   $schema['services_endpoint'] = array(
     'description' => 'Stores endpoint information for services',
+    'export' => array(
+      'identifier'      => 'endpoint',
+      'export callback' => 'services_endpoint_export',
+      'list callback'   => 'services_endpoint_list',
+      'key'             => 'endpoint', //TODO: Change this to "name" as is the Chaos Tools default?
+    ),
     'fields' => array(
+      'eid' => array(
+        'type'        => 'serial',
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'not null'    => TRUE,
+        'no export'   => TRUE,
+      ),
       'endpoint' => array(
         'description' => 'The name of the endpoint.',
         'type'        => 'varchar',

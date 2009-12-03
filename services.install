@@ -39,12 +39,6 @@ function services_schema() {
         'length'      => 255,
         'not null'    => TRUE,
       ),
-      'enabled'       => array(
-        'description' => 'Whether the the endpoint is enabled or not',
-        'type'        => 'int',
-        'size'        => 'tiny',
-        'default'     => 1,
-      ),
       'server' => array(
         'description' => 'The name of the server used in this endpoint.',
         'type'        => 'varchar',
@@ -65,18 +59,26 @@ function services_schema() {
         'default'     => '',
       ),
       'authentication_settings' => array(
-        'description' => 'The settings for the authentication module serialized as JSON.',
-        'type'        => 'text',
-        'not null'    => TRUE,
-        'default'     => '',
+        'description'    => 'The settings for the authentication module.',
+        'type'           => 'text',
+        'size'           => 'big',
+        'not null'       => TRUE,
+        'serialize'      => TRUE,
+        'object default' => array(),
       ),
       'resources' => array(
-        'description' => 'Information about the resources exposed in this endpoint, serialized as JSON.',
-        'type'        => 'text',
-        'not null'    => TRUE,
+        'description'    => 'Information about the resources exposed in this endpoint.',
+        'type'           => 'text',
+        'size'           => 'big',
+        'not null'       => TRUE,
+        'serialize'      => TRUE,
+        'object default' => array(),
       ),
     ),
-    'primary key' => array('endpoint'),
+    'primary key' => array('eid'),
+    'unique keys' => array(
+      'endpoint' => array('endpoint'),
+    ),
   );
 
   return $schema;

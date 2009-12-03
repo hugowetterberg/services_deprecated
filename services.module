@@ -64,17 +64,39 @@ function services_menu() {
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
   ) + $base;
+  $items['admin/build/services2/%services_endpoint/resources'] = array(
+    'title'          => 'Resources',
+    'page callback'  => 'services_edit_endpoint_resources',
+    'page arguments' => array(3),
+    'type'           => MENU_LOCAL_TASK,
+    'weight'         => 10,
+  ) + $base;
   $items['admin/build/services2/%services_endpoint/export'] = array(
     'title'          => 'Export endpoint',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('services_export_endpoint', 3),
     'type'           => MENU_LOCAL_TASK,
+    'weight'         => 20,
   ) + $base;
   $items['admin/build/services2/%services_endpoint/delete'] = array(
     'title'          => 'Delete endpoint',
     'page callback'  => 'drupal_get_form',
     'page arguments' => array('services_delete_confirm_endpoint', 3),
     'type'           => MENU_CALLBACK,
+  ) + $base;
+  $items['admin/build/services2/%services_endpoint/disable'] = array(
+    'page callback'  => 'services_disable_endpoint',
+    'page arguments' => array(3),
+    'type'           => MENU_CALLBACK,
+  ) + $base;
+  $items['admin/build/services2/%services_endpoint/enable'] = array(
+    'page callback'  => 'services_enable_endpoint',
+    'page arguments' => array(3),
+    'type'           => MENU_CALLBACK,
+  ) + $base;
+  $items['admin/build/services2/ahah/security-options'] = array(
+    'page callback' => '_services_ahah_security_options',
+    'type'          => MENU_CALLBACK,
   ) + $base;
 
   $items['admin/build/services'] = array(
@@ -338,8 +360,11 @@ function services_endpoint_load_all() {
  *
  * @return void
  */
-function services_endpoint_save($endpoint, $update = FALSE) {
-  drupal_write_record('services_endpoint', $endpoint, $update ? 'endpoint' : array());
+function services_endpoint_save($endpoint) {
+  $update = (isset($endpoint->eid)) ? array('eid') : array();
+  drupal_write_record('services_endpoint', $endpoint, $update);
+  //TODO: Make this dependent on whether the path has actually changed or not?
+  menu_rebuild();
 }
 
 /**
@@ -639,4 +664,22 @@ function services_controller_get($name, $endpoint, $prefixes = array()) {
     }
   }
   return $controller;
+}
+
+/**
+ * Implementation of hook_default_services_endpoint()
+ */
+function services_default_services_endpoint() {
+  $endpoint = new stdClass;
+  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
+  $endpoint->endpoint = 'test';
+  $endpoint->title = 'Testar igen';
+  $endpoint->server = 'rest_server';
+  $endpoint->path = 'skojet/art/234';
+  $endpoint->authentication = '';
+  $endpoint->authentication_settings = FALSE;
+  $endpoint->resources = array();
+  $endpoints['test'] = $endpoint;
+
+ return $endpoints;
 }

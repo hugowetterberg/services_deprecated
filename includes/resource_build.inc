@@ -103,7 +103,7 @@ function _services_strip_hashes(&$array) {
  */
 function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
   foreach ($resources as $name => &$resource) {
-    $cres = $endpoint && isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
+    $cres = $endpoint && isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
     $resource['endpoint'] = $cres;
 
     if ($strict && empty($cres)) {
@@ -220,11 +220,13 @@ function _services_legacy_services_as_resources() {
     $controller = $service;
     $controller['args'] = array();
 
-    foreach ($service['args'] as $arg) {
-      $arg['source'] = array(
-        'data' => $arg['name'],
-      );
-      $controller['args'][] = $arg;
+    if (!empty($service['args'])) {
+      foreach ($service['args'] as $arg) {
+        $arg['source'] = array(
+          'data' => $arg['name'],
+        );
+        $controller['args'][] = $arg;
+      }
     }
 
     $resources['service_' . $signature[0]]['actions'][$signature[1]] = $controller;

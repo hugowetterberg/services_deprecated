@@ -14,10 +14,10 @@ function services_oauth_authentication_info() {
   );
 }
 
-function services_oauth_services_resource_operation_settings_alter(&$settings, $context, $resource, $class, $name=NULL) {
+function services_oauth_services_resource_operation_settings_alter(&$settings, $endpoint, $resource, $class, $name=NULL) {
   require_once('services_oauth.admin.inc');
-  if ($context['authentication'] == 'services_oauth') {
-    $oauth_context = $context['authentication_settings']['oauth_context'];
+  if ($endpoint->authentication == 'services_oauth') {
+    $oauth_context = $endpoint->authentication_settings['oauth_context'];
     if ($rop = get_resource_operation_info($resource, $class, $name)) {
       $auth_levels = array();
       foreach (oauth_common_authorization_levels($oauth_context) as $name => $level) {

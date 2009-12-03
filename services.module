@@ -611,21 +611,3 @@ function services_controller_get($name, $endpoint, $prefixes = array()) {
   }
   return $controller;
 }
-
-/**
- * Implementation of hook_default_services_endpoint()
- */
-function services_default_services_endpoint() {
-  $endpoint = new stdClass;
-  $endpoint->disabled = FALSE; /* Edit this to true to make a default endpoint disabled initially */
-  $endpoint->endpoint = 'test';
-  $endpoint->title = 'Testar igen';
-  $endpoint->server = 'rest_server';
-  $endpoint->path = 'skojet/art/234';
-  $endpoint->authentication = '';
-  $endpoint->authentication_settings = FALSE;
-  $endpoint->resources = array();
-  $endpoints['test'] = $endpoint;
-
- return $endpoints;
-}

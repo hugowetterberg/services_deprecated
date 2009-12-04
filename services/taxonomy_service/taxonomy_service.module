@@ -1,7 +1,6 @@
 <?php
 // $Id: taxonomy_service.module,v 1.4.2.9.2.1 2009/10/15 03:54:06 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general taxonomy functionalities to services module.
  */

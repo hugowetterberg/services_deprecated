@@ -1,7 +1,6 @@
 <?php
 // $Id: file_service.inc,v 1.1.2.7.2.1 2009/10/15 02:54:23 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general file functionalities to services module.
  */

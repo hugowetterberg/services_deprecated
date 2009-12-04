@@ -1,7 +1,6 @@
 <?php
 // $Id: search_service.inc,v 1.1.2.8.2.1 2009/09/05 13:57:58 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general search functionalities to services module.
  */

@@ -1,7 +1,6 @@
 <?php
 // $Id: services_keyauth.install,v 1.1.2.4.2.2 2009/06/20 19:48:42 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *   Install, uninstall and update the module.
  */

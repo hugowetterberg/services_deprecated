@@ -1,7 +1,6 @@
 <?php
 // $Id: node_service.inc,v 1.1.2.11.2.1 2009/09/05 13:57:58 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general node functionalities to services module.
  */

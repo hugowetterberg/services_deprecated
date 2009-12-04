@@ -1,7 +1,6 @@
 <?php
 // $Id: system_service.inc,v 1.1.2.5 2009/03/07 22:35:04 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general system functionalities to services module.
  */

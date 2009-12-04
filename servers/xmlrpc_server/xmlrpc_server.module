@@ -1,7 +1,6 @@
 <?php
 // $Id: xmlrpc_server.module,v 1.6.2.14.2.3 2009/11/04 21:37:02 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Enable XML-RPC for services module.
  */

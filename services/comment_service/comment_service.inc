@@ -1,7 +1,6 @@
 <?php
 // $Id: comment_service.inc,v 1.1.2.1 2009/06/06 22:57:40 marcingy Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link commenting functionality to services module.
  */

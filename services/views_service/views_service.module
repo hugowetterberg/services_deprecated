@@ -1,7 +1,6 @@
 <?php
 // $Id: views_service.module,v 1.4.2.20.2.2 2009/11/27 16:51:00 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general views functionalities to services module.
  */

@@ -1,5 +1,6 @@
 <?php
-// $Id: node_service.inc,v 1.1.2.11.2.1 2009/09/05 13:57:58 marcingy Exp $
+// $Id: node_service.inc,v 1.1.2.11.2.3 2009/12/04 00:52:48 heyrocker Exp $
+
 /**
  * @author Services Dev Team
  * @file
@@ -57,11 +58,11 @@ function node_service_get_access($nid) {
  */
 function node_service_view($nid, $fields = array(), $teaser = FALSE, $page = FALSE) {
   $node = services_node_load(node_build_content(node_load($nid), $teaser, $page), $fields);
-  
+
   if (!$node) {
     return services_error(t("Could not find the node."), 404);
   }
-  
+
   return $node;
 }
 

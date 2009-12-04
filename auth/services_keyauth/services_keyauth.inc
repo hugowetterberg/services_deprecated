@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.inc,v 1.1.2.8.2.8 2009/11/10 18:53:18 heyrocker Exp $
+// $Id: services_keyauth.inc,v 1.1.2.8.2.9 2009/12/03 05:59:35 heyrocker Exp $
 
 /**
  * @file
@@ -93,7 +93,7 @@ function _services_keyauth_alter_methods(&$methods) {
         $method['key'] = TRUE;
         $method['auth'] = TRUE;
     }
-    
+
     if ($method['auth'] && variable_get('services_use_sessid', TRUE)) {
       array_unshift($method['args'], $arg_sessid);
     }
@@ -117,7 +117,7 @@ function _services_keyauth_alter_browse_form(&$form, $method) {
           '#type'           => 'textfield',
           '#value'          => t('Gets generated after form submission'),
           '#disabled'       => TRUE
-         );
+        );
         break;
       case 'sessid':
         $form['arg'][$key]['#default_value']  = session_id();
@@ -127,11 +127,11 @@ function _services_keyauth_alter_browse_form(&$form, $method) {
         break;
       case 'domain_time_stamp':
         $form['arg'][$key] = array(
-           '#title'          => 'Timestamp',
-           '#type'           => 'textfield',
-           '#value'          => t('Gets generated after form submission'),
-           '#disabled'       => TRUE
-         );
+          '#title'          => 'Timestamp',
+          '#type'           => 'textfield',
+          '#value'          => t('Gets generated after form submission'),
+          '#disabled'       => TRUE
+        );
         break;
       case 'nonce':
         $form['arg'][$key]['#default_value'] = user_password();
@@ -170,8 +170,8 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
     if ($hash != services_get_hash($timestamp, $domain, $nonce, $method, $args)) {
       return services_error(t('Invalid API key.'), 401);
     }
-    
-    if (!db_result(db_query("SELECT COUNT(*) FROM {services_key_permissions} 
+
+    if (!db_result(db_query("SELECT COUNT(*) FROM {services_key_permissions}
         WHERE kid = '%s' AND method = '%s'", $api_key, $method_name))) {
       return services_error(t('Access denied.'), 401);
     }
@@ -191,7 +191,7 @@ function _services_keyauth_authenticate_call($method, $method_name, &$args) {
 function _services_keyauth_alter_browse_form_submit($method, &$args) {
   if ($method['key'] && variable_get('services_use_key', TRUE)) {
     $args_stripped = $args;
-  
+
     for ($i = 1; $i <= 4; $i++) {
       array_shift($args_stripped);
     }

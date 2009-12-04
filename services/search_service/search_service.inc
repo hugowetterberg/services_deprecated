@@ -1,5 +1,5 @@
 <?php
-// $Id: search_service.inc,v 1.1.2.8.2.1 2009/09/05 13:57:58 marcingy Exp $
+// $Id: search_service.inc,v 1.1.2.8.2.2 2009/12/02 15:09:10 heyrocker Exp $
 /**
  * @author Services Dev Team
  * @file
@@ -51,9 +51,9 @@ function search_service_content($keys, $simple = FALSE) {
 
   // invoke the search hook to generate results
   $results = array();
-  $search_hooks = variable_get('search_service_options', 'node');
+  $search_hooks = variable_get('search_service_options', array('node' => 'node'));
 
-  watchdog('search_service', t('search.content invoked for !keys using hooks !hooks', array('!keys' => $keys, '!hooks' => implode($search_hooks, ', '))));
+  watchdog('search_service', t('search.content invoked for !keys using hooks !hooks', array('!keys' => $keys, '!hooks' => implode(', ', $search_hooks))));
 
   // run through only select hook_search() as defined in /admin/settings/search_service
   foreach ($search_hooks as $hook) {

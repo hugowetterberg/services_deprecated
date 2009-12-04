@@ -1,5 +1,11 @@
 <?php
-// $Id: node_resource.inc,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
+// $Id: node_resource.inc,v 1.1.2.2 2009/12/04 00:52:48 heyrocker Exp $
+
+/**
+ * @author Services Dev Team
+ * @file
+ *  CRUD resource funcionality for nodes.
+ */
 
 function _node_resource_retrieve($nid) {
   $node = node_load($nid);
@@ -23,7 +29,7 @@ function _node_resource_create($node) {
   $form_state = array();
   $form_state['values'] = $values;
   $form_state['values']['op'] = t('Save');
-  $ret = drupal_execute($node->type . '_node_form', $form_state, $node);
+  $ret = drupal_execute($node->type .'_node_form', $form_state, $node);
 
   // Fetch $nid out of $form_state
   $nid = $form_state['nid'];
@@ -54,7 +60,7 @@ function _node_resource_update($nid, $node) {
     $form_state['values']['op'] = t('Save');
     $form_state['node'] = (array)$old_node;
 
-    drupal_execute($old_node->type . '_node_form', $form_state, $old_node);
+    drupal_execute($old_node->type .'_node_form', $form_state, $old_node);
 
     if ($errors = form_get_errors()) {
       return services_error(implode("\n", $errors), 406);

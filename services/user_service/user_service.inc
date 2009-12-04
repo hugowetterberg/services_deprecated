@@ -1,5 +1,6 @@
 <?php
-// $Id: user_service.inc,v 1.1.2.8.2.1 2009/09/05 13:57:59 marcingy Exp $
+// $Id: user_service.inc,v 1.1.2.8.2.2 2009/12/04 00:42:03 heyrocker Exp $
+
 /**
  * @author Services Dev Team
  * @file
@@ -126,8 +127,8 @@ function user_service_logout() {
  */
 function user_service_save($account) {
   // if uid is present then update, otherwise insert
-  $update = user_load($account['uid']);	
-  $account = isset($update->uid) ? user_save($update,$account) : user_save('', $account);  
+  $update = user_load($account['uid']);
+  $account = isset($update->uid) ? user_save($update, $account) : user_save('', $account);
   if (!$account) {
     return services_error(t('Error on saving the user.'), 500);
   }

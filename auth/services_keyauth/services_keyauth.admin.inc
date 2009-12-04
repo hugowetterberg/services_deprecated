@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.admin.inc,v 1.1.2.2.2.3 2009/11/04 21:37:01 heyrocker Exp $
+// $Id: services_keyauth.admin.inc,v 1.1.2.2.2.4 2009/12/03 05:59:35 heyrocker Exp $
 
 /**
  * @file
@@ -78,7 +78,7 @@ function services_keyauth_admin_keys_form() {
     '#description'    => t('External domain allowed to use this key.'),
     '#required'       => TRUE,
   );
-  
+
   $methods = services_get_all();
   foreach ($methods as $method) {
     $form_methods[$method['method']] = $method['method'];
@@ -128,7 +128,7 @@ function services_keyauth_admin_keys_save(&$key) {
       db_query("INSERT INTO {services_key_permissions} (kid, method) VALUES ('%s', '%s')", $key['kid'], $value);
     }
   }
-  return $return; 
+  return $return;
 }
 
 function services_keyauth_admin_keys_delete($kid) {

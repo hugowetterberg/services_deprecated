@@ -1,5 +1,11 @@
 <?php
-// $Id: services.resource-translation.inc,v 1.1.2.3 2009/12/01 16:55:20 hugowetterberg Exp $
+// $Id: services.resource-translation.inc,v 1.1.2.4 2009/12/03 05:52:08 heyrocker Exp $
+
+/**
+ * @author Services Dev Team
+ * @file
+ *  Resource translation functions for Services.
+ */
 
 /**
  * @file
@@ -39,14 +45,14 @@ function _services_resource_as_services($resource) {
   foreach ($subcontrollers as $attr => $name) {
     if (isset($resource[$attr])) {
       foreach ($resource[$attr] as $sc_name => $controller) {
-        $methods[] = _services_resource_controller_as_service($resource['name'], $name . '_' . $sc_name, $controller, $file);
+        $methods[] = _services_resource_controller_as_service($resource['name'], $name .'_'. $sc_name, $controller, $file);
       }
     }
   }
 
   if (isset($resource['actions'])) {
     foreach ($resource['actions'] as $sc_name => $controller) {
-      $methods[] = _services_resource_controller_as_service($resource['name'], 'action_' . $sc_name, $controller, $file);
+      $methods[] = _services_resource_controller_as_service($resource['name'], 'action_'. $sc_name, $controller, $file);
     }
   }
 
@@ -59,10 +65,10 @@ function _services_resource_as_services($resource) {
  */
 function _services_resource_controller_as_service($resource, $name, $controller, $file) {
   $method = array_merge($controller, array(
-    'method' => $resource . '_resource.' . $name,
+    'method' => $resource .'_resource.'. $name,
   ));
 
-  if (!empty($file) && empty($method['file'])) {
+  if (!empty($file) && !empty($method['file'])) {
     $method['file'] = $file;
   }
 
@@ -95,7 +101,7 @@ function _services_services_as_resources($services) {
       $controller['args'][] = $arg;
     }
 
-    $resources['service_' . $signature[0]]['actions'][$signature[1]] = $controller;
+    $resources['service_'. $signature[0]]['actions'][$signature[1]] = $controller;
   }
   return $resources;
 }

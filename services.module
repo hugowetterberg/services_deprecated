@@ -1,5 +1,6 @@
 <?php
-// $Id: services.module,v 1.8.2.88.2.10 2009/11/04 21:37:01 heyrocker Exp $
+// $Id: services.module,v 1.8.2.88.2.11 2009/12/03 05:52:08 heyrocker Exp $
+
 /**
  * @file
  *  Provides a generic but powerful API for exposing web services.
@@ -250,8 +251,8 @@ function services_auth_info($property = NULL, $module = NULL) {
   $module = $module ? $module : variable_get('services_auth_module', '');
 
   if (!isset($info[$module])) {
-    if (!empty($module) && module_exists($module) && is_callable($module . '_authentication_info')) {
-      $info[$module] = call_user_func($module . '_authentication_info');
+    if (!empty($module) && module_exists($module) && is_callable($module .'_authentication_info')) {
+      $info[$module] = call_user_func($module .'_authentication_info');
     }
     else {
       $info[$module] = FALSE;
@@ -286,7 +287,7 @@ function services_auth_invoke($method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NU
   $func = services_auth_info($method, $module);
   if ($func) {
     if ($file = services_auth_info('file')) {
-      require_once(drupal_get_path('module', $module) . '/' . $file);
+      require_once(drupal_get_path('module', $module) .'/'. $file);
     }
 
     if (is_callable($func)) {
@@ -321,7 +322,7 @@ function services_auth_invoke_custom($module, $method, &$arg1 = NULL, &$arg2 = N
   $func = services_auth_info($method, $module);
   if ($func) {
     if ($file = services_auth_info('file', $module)) {
-      require_once(drupal_get_path('module', $module) . '/' . $file);
+      require_once(drupal_get_path('module', $module) .'/'. $file);
     }
 
     if (is_callable($func)) {
@@ -464,7 +465,7 @@ function services_resource_uri($path) {
  *  An array containing all resources.
  */
 function services_get_all_resources($include_services = TRUE, $reset = FALSE) {
-  $cache_key = 'services:resources' . ($include_services?'_with_services':'');
+  $cache_key = 'services:resources'. ($include_services?'_with_services':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
@@ -568,12 +569,12 @@ function _services_process_resource($name, &$resource, &$controllers) {
   $keys = array('retrieve', 'create', 'update', 'delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
-      $controllers[$path . '/' . $key] = &$resource[$key];
+      $controllers[$path .'/'. $key] = &$resource[$key];
     }
   }
 
   if (isset($resource['index'])) {
-    $controllers[$path . '/index'] = &$resource['index'];
+    $controllers[$path .'/index'] = &$resource['index'];
   }
 
   if (isset($resource['relationships'])) {
@@ -585,7 +586,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
         }
         $resource['relationships'][$relname] = array_merge($resource['retrieve'], $rel);
       }
-      $controllers[$path . '/relationship/' . $relname] = &$resource['relationships'][$relname];
+      $controllers[$path .'/relationship/'. $relname] = &$resource['relationships'][$relname];
     }
   }
 
@@ -597,7 +598,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
         unset($up['args']);
         $resource['actions'][$actname] = array_merge($up, $act);
       }
-      $controllers[$path . '/action/' . $actname] = &$resource['actions'][$actname];
+      $controllers[$path .'/action/'. $actname] = &$resource['actions'][$actname];
     }
   }
 
@@ -610,7 +611,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
         }
         $resource['targeted actions'][$actname] = array_merge($resource['update'], $act);
       }
-      $controllers[$path . '/targeted_action/' . $actname] = &$resource['actions'][$actname];
+      $controllers[$path .'/targeted_action/'. $actname] = &$resource['actions'][$actname];
     }
   }
 }
@@ -637,7 +638,7 @@ function services_delegate_access($perm) {
  *   An array containing all services and thir methods
  */
 function services_get_all($include_resources = TRUE, $reset = FALSE) {
-  $cache_key = 'services:methods' . ($include_resources?'_with_resources':'');
+  $cache_key = 'services:methods'. ($include_resources?'_with_resources':'');
 
   if (!$reset && ($cache = cache_get($cache_key)) && isset($cache->data)) {
     return $cache->data;
@@ -689,7 +690,7 @@ function services_get_all($include_resources = TRUE, $reset = FALSE) {
 
         // Translate all resources
         foreach ($resources as $name => $def) {
-          foreach(_services_resource_as_services($def) as $method) {
+          foreach (_services_resource_as_services($def) as $method) {
             $methods[] = $method;
           }
         }
@@ -850,4 +851,4 @@ function services_session_unload($backup) {
  */
 function services_access_menu() {
   return TRUE;
-} 
+}

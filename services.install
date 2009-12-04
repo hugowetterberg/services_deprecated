@@ -1,5 +1,6 @@
 <?php
-// $Id: services.install,v 1.3.2.21 2009/05/26 02:55:14 heyrocker Exp $
+// $Id: services.install,v 1.3.2.21.2.1 2009/12/03 05:52:08 heyrocker Exp $
+
 /**
  * @file
  *   Install, uninstall and update the module.
@@ -25,7 +26,7 @@ function services_install() {
 function services_uninstall() {
   drupal_uninstall_schema('services');
   $ret = array();
-  
+
   // Drop legacy tables
   $legacy_tables = array('services_keys', 'services_timestamp_nonce');
   foreach ($legacy_tables as $table) {
@@ -71,9 +72,9 @@ function services_update_6001() {
         'default'     => ''
       ),
     ),
-    'indexes' => array( 
-       'timestamp' => array('timestamp'), 
-    ), 
+    'indexes' => array(
+       'timestamp' => array('timestamp'),
+    ),
     'primary key' => array('nonce'),
   );
   $update = array();

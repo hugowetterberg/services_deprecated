@@ -516,7 +516,7 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
   $endpoint  = $form_state['values']['endpoint_object'];
 
   foreach ($resources as $name => $resource) {
-    $c = isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
+    $c = isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
 
     $c['alias'] = $resource['alias'];
     foreach ($resource['operations'] as $op => $def) {

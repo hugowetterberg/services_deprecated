@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -98,7 +99,7 @@ function _services_strip_hashes(&$array) {
  * @param array $endpoint
  *  A endpoint information array.
  * @param bool $strict
- *  Optional. 
+ *  Optional.
  * @return void
  */
 function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
@@ -154,7 +155,7 @@ function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
 function _services_process_resource($name, &$resource, &$controllers) {
   $resource['name'] = $name;
 
-  $keys = array('retrieve','create','update','delete');
+  $keys = array('retrieve', 'create', 'update', 'delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
       $controllers[$name . '/' . $key] = &$resource[$key];

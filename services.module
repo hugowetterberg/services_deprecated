@@ -463,7 +463,7 @@ function services_controller_get($name, $endpoint, $prefixes = array()) {
           break;
       }
     }
-    else if (count($qual) == 2) {
+    elseif (count($qual) == 2) {
       // Set up names with default values
       $prefixes = array_merge(
         array(

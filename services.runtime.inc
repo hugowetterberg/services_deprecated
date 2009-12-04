@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 /**
  * @file
  *  Contains functions that only are necessary when a service call is made.

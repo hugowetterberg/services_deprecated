@@ -421,24 +421,24 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
   foreach ($resources as $name => $resource) {
     $rc = $resource['endpoint'];
     $res_set = array(
-      '#type' => 'fieldset',
-      '#title' => t('!name resource', array(
+      '#type'        => 'fieldset',
+      '#title'       => t('!name resource', array(
         '!name' => preg_replace('/[_-]+/', ' ', $name),
       )),
       '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-      '#tree' => TRUE,
-      '#attributes' => array(
+      '#collapsed'   => TRUE,
+      '#tree'        => TRUE,
+      '#attributes'  => array(
         'class' => 'resource',
       ),
     );
 
     $res_set['alias'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Alias'),
-      '#description' => t('The alias you enter here will be used instead of the resource name.'),
-      '#size' => 40,
-      '#maxlength' => 255,
+      '#type'          => 'textfield',
+      '#title'         => t('Alias'),
+      '#description'   => t('The alias you enter here will be used instead of the resource name.'),
+      '#size'          => 40,
+      '#maxlength'     => 255,
       '#default_value' => isset($rc['alias']) ? $rc['alias'] : '',
     );
 
@@ -448,33 +448,33 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
     foreach ($ops as $op => $title) {
       if (isset($resource[$op])) {
         $res_set['operations'][$op] = array(
-          '#type' => 'fieldset',
-          '#title' => $title,
+          '#type'        => 'fieldset',
+          '#title'       => $title,
           '#collapsible' => TRUE,
-          '#collapsed' => TRUE,
+          '#collapsed'   => TRUE,
         );
         _services_resource_operation_settings($res_set['operations'][$op], $endpoint, $resource, $op);
       }
     }
 
     $classes = array(
-      'actions' => 'actions',
+      'actions'          => 'actions',
       'targeted_actions' => 'targeted actions',
-      'relationships' => 'relationships',
+      'relationships'    => 'relationships',
     );
     foreach ($classes as $element => $class) {
       if (!empty($resource[$class])) {
         $res_set[$element] = array(
-          '#type' => 'fieldset',
+          '#type'  => 'fieldset',
           '#title' => t($class),
-          '#tree' => TRUE,
+          '#tree'  => TRUE,
         );
         foreach ($resource[$class] as $action => $definition) {
           $res_set[$element][$action] = array(
-            '#type' => 'fieldset',
-            '#title' => $action,
+            '#type'        => 'fieldset',
+            '#title'       => $action,
             '#collapsible' => TRUE,
-            '#collapsed' => TRUE,
+            '#collapsed'   => TRUE,
           );
           _services_resource_operation_settings($res_set[$element][$action], $endpoint, $resource, $class, $action);
         }
@@ -489,7 +489,7 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
   $form['resources'] = $res;
 
   $form['save'] = array(
-    '#type' => 'submit',
+    '#type'  => 'submit',
     '#value' => t('Save'),
   );
 
@@ -639,7 +639,7 @@ function _services_ahah_security_options() {
 
   print drupal_to_js(array(
     'status' => TRUE,
-    'data' => $output ? $output : '',
+    'data'   => $output ? $output : '',
   ));
   exit;
 }

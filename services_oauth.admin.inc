@@ -2,6 +2,13 @@
 // $Id$
 
 /**
+ * @file
+ * Administrative functions for the Services OAuth module.
+ *
+ * This provides the UI to set the required authentication levels for a Services endpoint.
+ */
+
+/**
  * Helper function for generating authentication and authorization options for
  * both controllers and methods.
  *

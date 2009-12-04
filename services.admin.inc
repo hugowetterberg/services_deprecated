@@ -260,7 +260,7 @@ function services_edit_form_endpoint_validate($form, &$form_state) {
       form_error($form['endpoint'], t('Endpoint name must be unique.'));
     }
   }
-  //TODO: More validation!? Eg. validate path?
+  //TODO: More validation? Eg. validate path? Transliteration etc?
 }
 
 /**
@@ -554,7 +554,7 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
  *  Information about the operation, or NULL if no matching
  *  operation was found.
  */
-function get_resource_operation_info($resource, $class, $name=NULL) {
+function get_resource_operation_info($resource, $class, $name = NULL) {
   $op = NULL;
 
   if (isset($resource[$class])) {
@@ -581,7 +581,7 @@ function get_resource_operation_info($resource, $class, $name=NULL) {
  *  Optional. The name parameter is only used for actions, targeted actions
  *  and relationship.
  */
-function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name=NULL) {
+function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name = NULL) {
   if ($rop = get_resource_operation_info($resource, $class, $name)) {
     $settings['enabled'] = array(
       '#type' => 'checkbox',

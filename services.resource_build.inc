@@ -16,7 +16,7 @@
  * @return array
  *  The resource definitions.
  */
-function _services_build_resources($endpoint_name='') {
+function _services_build_resources($endpoint_name = '') {
   // Get all installed resources
   $resources = module_invoke_all('services_resources');
   _services_strip_hashes($resources);
@@ -54,8 +54,9 @@ function _services_build_resources($endpoint_name='') {
     }
 
     // Apply any aliases from endpoint
-    if (!empty($endpoint))
-    $aliased = array();
+    if (!empty($endpoint)) {
+      $aliased = array();
+    }
     foreach ($resources as $key => $def) {
       if (!empty($def['endpoint']['alias'])) {
         $aliased[$def['endpoint']['alias']] = $def;
@@ -102,9 +103,9 @@ function _services_strip_hashes(&$array) {
  *  Optional.
  * @return void
  */
-function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
+function _services_apply_endpoint(&$resources, $endpoint, $strict = TRUE) {
   foreach ($resources as $name => &$resource) {
-    $cres = $endpoint && isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
+    $cres = ($endpoint && isset($endpoint->resources[$name])) ? $endpoint->resources[$name] : array();
     $resource['endpoint'] = $cres;
 
     if ($strict && empty($cres)) {

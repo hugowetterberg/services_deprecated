@@ -1,9 +1,8 @@
 <?php
 // $Id: services.install,v 1.3.2.21 2009/05/26 02:55:14 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
- *   Install, uninstall and update the module.
+ * Install, uninstall and update the Services module.
  */
 
 /**

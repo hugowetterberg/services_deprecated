@@ -135,7 +135,7 @@ function services_access_menu() {
 function services_theme() {
   return array(
     'services_endpoint_index' => array(
-      'template' => 'services_endpoint_index',
+      'template'  => 'services_endpoint_index',
       'arguments' => array('endpoints' => NULL),
     ),
   );
@@ -144,7 +144,7 @@ function services_theme() {
 /**
  * Implementation of hook_bypass_secure_site().
  */
-function services_bypass_secure_site($path, $menu_item=NULL) {
+function services_bypass_secure_site($path, $menu_item = NULL) {
   $bypass = FALSE;
   if ($menu_item && $menu_item['page_callback'] == 'services_server') {
     $endpoint = services_endpoint_load($menu_item['page_arguments'][1]);
@@ -210,7 +210,7 @@ function services_endpoint_callback($endpoint_name) {
  * Callback for crossdomain.xml
  */
 function services_crossdomain_xml() {
-  $output = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">'."\n";
+  $output = '<!DOCTYPE cross-domain-policy SYSTEM "http://www.macromedia.com/xml/dtds/cross-domain-policy.dtd">' . "\n";
   $output .= '<cross-domain-policy>' . "\n";
 
   $domains = module_invoke_all('services_crossdomain_domain_policy');
@@ -261,6 +261,9 @@ function services_xml_output($xml) {
 
 /**
  * Create a new endpoint with defaults appropriately set from schema.
+ * 
+ * @return stdClass
+ *  An endpoint initialized with the default values.
  */
 function services_endpoint_new() {
   ctools_include('export');
@@ -270,7 +273,10 @@ function services_endpoint_new() {
 /**
  * Load a single endpoint.
  *
- * @return array Endpoint configuration.
+ * @param string $name
+ *  The name of the endpoint.
+ * @return stdClass
+ *  The endpoint configuration.
  */
 function services_endpoint_load($name) {
   ctools_include('export');
@@ -287,6 +293,7 @@ function services_endpoint_load($name) {
  * Load all endpoints.
  *
  * @return array
+ *  Array of endpoint objects keyed by endpoint names.
  */
 function services_endpoint_load_all() {
   ctools_include('export');
@@ -301,12 +308,8 @@ function services_endpoint_load_all() {
 function services_endpoint_save($endpoint) {
   $update = (isset($endpoint->eid)) ? array('eid') : array();
   drupal_write_record('services_endpoint', $endpoint, $update);
-  //TODO: Make this dependent on whether the path has actually changed or not?
   menu_rebuild();
-
-  //TODO: Is this necessary?
-  // Clear the cache for the endpoint
-  cache_clear_all('services:' . $definition['endpoint'] . ':', 'cache', TRUE);
+  cache_clear_all('services:' . $endpoint->endpoint . ':', 'cache', TRUE);
 }
 
 /**
@@ -315,8 +318,9 @@ function services_endpoint_save($endpoint) {
  * @return void
  */
 function services_endpoint_delete($endpoint) {
-  //TODO: Do we need more cleanup?
   db_query("DELETE FROM {services_endpoint} WHERE endpoint = '%s' AND eid = %d", $endpoint->endpoint, $endpoint->eid);
+  menu_rebuild();
+  cache_clear_all('services:' . $endpoint->endpoint . ':', 'cache', TRUE);
 }
 
 /**
@@ -352,7 +356,7 @@ function services_endpoint_list() {
  * @return array
  *  An array containing all resources.
  */
-function services_get_resources($endpoint_name='') {
+function services_get_resources($endpoint_name = '') {
   $cache_key = 'services:' . $endpoint_name . ':resources';
 
   $resources = array();
@@ -394,12 +398,11 @@ function services_services_resources() {
  *  name is the key and the value is a non-associative array containing the
  *  resource's controller names.
  */
-function services_controllers_list($endpoint, $prefixes = array(), $key_by_resource=FALSE) {
+function services_controllers_list($endpoint, $prefixes = array(), $key_by_resource = FALSE) {
   $controllers = array();
-  $prefixes = array_merge(
-    array(
-      'actions' => 'do',
-      'relationships' => 'get',
+  $prefixes   = array_merge(array(
+      'actions'          => 'do',
+      'relationships'    => 'get',
       'targeted actions' => 'set',
     ), $prefixes);
   $resources = services_get_resources($endpoint);
@@ -465,10 +468,9 @@ function services_controller_get($name, $endpoint, $prefixes = array()) {
     }
     elseif (count($qual) == 2) {
       // Set up names with default values
-      $prefixes = array_merge(
-        array(
-          'actions' => 'do',
-          'relationships' => 'get',
+      $prefixes = array_merge(array(
+          'actions'          => 'do',
+          'relationships'    => 'get',
           'targeted actions' => 'set',
         ), $prefixes);
 

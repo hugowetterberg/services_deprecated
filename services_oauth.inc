@@ -25,7 +25,7 @@ function _services_oauth_authenticate_call($method, $args) {
     module_load_include('inc', 'oauth_common');
 
     $endpoint_name = services_get_server_info('endpoint');
-    $service_endpoint = services_get_endpoint($endpoint_name);
+    $service_endpoint = services_endpoint_load($endpoint_name);
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
     if (!$signed && ($cred=='consumer' || $cred=='token')) {
@@ -36,7 +36,7 @@ function _services_oauth_authenticate_call($method, $args) {
       throw new OAuthException('Missing consumer token');
     }
 
-    if ($consumer->context !== $service_endpoint['authentication_settings']['oauth_context']) {
+    if ($consumer->context !== $service_endpoint->authentication_settings['oauth_context']) {
       throw new OAuthException('The consumer is not valid in the current context');
     }
 

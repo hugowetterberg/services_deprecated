@@ -23,9 +23,9 @@ function _services_build_resources($endpoint_name='') {
   // Load the endpoint
   $endpoint = NULL;
   if (!empty($endpoint_name)) {
-    $endpoint = services_get_endpoint($endpoint_name);
+    $endpoint = services_endpoint_load($endpoint_name);
     // Apply the endpoint on the services
-    _services_apply_endpoint($resources, $endpoint, TRUE);
+    services_endpoint_callback($resources, $endpoint, TRUE);
   }
 
   drupal_alter('services_resources', $resources, $endpoint);
@@ -48,8 +48,8 @@ function _services_build_resources($endpoint_name='') {
   // Do some endpoint-dependent processing
   if ($endpoint) {
     // Let the authentication module alter our controllers
-    if (!empty($endpoint['authentication'])) {
-      services_auth_invoke($endpoint['authentication'], 'alter_controllers', $controllers, $endpoint);
+    if (!empty($endpoint->authentication)) {
+      services_auth_invoke($endpoint->authentication, 'alter_controllers', $controllers, $endpoint);
     }
 
     // Apply any aliases from endpoint

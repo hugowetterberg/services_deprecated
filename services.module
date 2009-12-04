@@ -106,28 +106,20 @@ function services_menu() {
   );
 
   // Add menu items for the different endpoints
-  $endpoints = services_get_endpoints();
-  foreach ($endpoints as $name => $endpoint) {
-    $items[$endpoint['path']] = array(
-      'title'             => 'Services endpoint',
-      'access callback'   => 'services_access_menu',
-      'page callback'     => 'services_endpoint_callback',
-      'page arguments'    => array($name),
-      'type'              => MENU_CALLBACK,
-    );
+  $endpoints = services_endpoint_load_all();
+  foreach ($endpoints as $endpoint) {
+    if (!$endpoint->disabled) {
+      $items[$endpoint->path] = array(
+        'title'             => 'Services endpoint',
+        'access callback'   => 'services_access_menu',
+        'page callback'     => 'services_endpoint_callback',
+        'page arguments'    => array($endpoint->endpoint),
+        'type'              => MENU_CALLBACK,
+      );
+    }
   }
 
   return $items;
-}
-
-/**
- * Menu system title callback for the edit endpoint menu item.
- */
-function _services_edit_endpoint_title($title, $endpoint) {
-  $endpoint = services_get_endpoint($endpoint);
-  return t($title, array(
-    '!title' => $endpoint['title'],
-  ));
 }
 
 /**
@@ -155,9 +147,9 @@ function services_theme() {
 function services_bypass_secure_site($path, $menu_item=NULL) {
   $bypass = FALSE;
   if ($menu_item && $menu_item['page_callback'] == 'services_server') {
-    $endpoint = services_get_endpoint($menu_item['page_arguments'][1]);
+    $endpoint = services_endpoint_load($menu_item['page_arguments'][1]);
     // Only bypass securesite if a authentication module is enabled.
-    $bypass = $endpoint && !empty($endpoint['authentication']);
+    $bypass = $endpoint && !empty($endpoint->authentication);
   }
   return $bypass;
 }
@@ -192,16 +184,16 @@ function services_get_servers() {
 function services_endpoint_callback($endpoint_name) {
   module_load_include('runtime.inc', 'services');
 
-  $endpoint = services_get_endpoint($endpoint_name);
-  $server = $endpoint['server'];
+  $endpoint = services_endpoint_load($endpoint_name);
+  $server = $endpoint->server;
 
   if (function_exists($server . '_server')) {
     // call the server
     services_set_server_info_from_array(array(
-      'module' => $server,
-      'endpoint' => $endpoint_name,
-      'endpoint_path' => $endpoint['path'],
-      'drupal_path' => getcwd(),
+      'module'        => $server,
+      'endpoint'      => $endpoint_name,
+      'endpoint_path' => $endpoint->path,
+      'drupal_path'   => getcwd(),
     ));
 
     print call_user_func($server . '_server');
@@ -311,6 +303,10 @@ function services_endpoint_save($endpoint) {
   drupal_write_record('services_endpoint', $endpoint, $update);
   //TODO: Make this dependent on whether the path has actually changed or not?
   menu_rebuild();
+
+  //TODO: Is this necessary?
+  // Clear the cache for the endpoint
+  cache_clear_all('services:' . $definition['endpoint'] . ':', 'cache', TRUE);
 }
 
 /**
@@ -346,128 +342,6 @@ function services_endpoint_list() {
     $return[$endpoint->endpoint] = $endpoint->title;
   }
   return $return;
-}
-
-/**
- * Gets a services endpoint
- *
- * @param string $name
- * @return array
- */
-function services_get_endpoint($name) {
-  $endpoints = services_get_endpoints();
-  $endpoint = NULL;
-  if (isset($endpoints[$name])) {
-    $endpoint = $endpoints[$name];
-  }
-  return $endpoint;
-}
-
-/**
- * Saves a services endpoint.
- *
- * @param array $definition
- */
-function services_write_endpoint($definition) {
-  $encode = array(
-    'authentication_settings', 'resources',
-  );
-
-  // Encode complex attributes as JSON
-  foreach ($encode as $key) {
-    if (isset($definition[$key])) {
-      $definition[$key] = json_encode($definition[$key]);
-    }
-  }
-
-  $update = db_result(db_query("SELECT COUNT(endpoint) FROM {services_endpoint} WHERE endpoint='%s'", array(
-    ':endpoint' => $definition['endpoint'],
-  ))) ? array('endpoint') : NULL;
-  drupal_write_record('services_endpoint', $definition, $update);
-
-  // Clear the cache for the endpoint
-  cache_clear_all('services:' . $definition['endpoint'] . ':', 'cache', TRUE);
-}
-
-/**
- * Gets all defined services endpoints.
- *
- * @param $include_disabled bool
- *  Pass TRUE if you want to include endpoints that are disabled.
- *  Defaults to FALSE.
- * @return array
- */
-function services_get_endpoints($include_disabled=FALSE) {
-  // Get all endpoints that are defined in code
-  $endpoints = module_invoke_all('services_endpoints', $include_disabled);
-  // Assign the endpoint name to the endpoint attribute to make
-  // endpoint from code consistent with those loaded from db.
-  foreach ($endpoints as $name => $def) {
-    $endpoints[$name]['endpoint'] = $name;
-  }
-
-  // Allow modules to load endpoints from database sources
-  $loaded = module_invoke_all('services_endpoints_load', $include_disabled);
-  foreach ($loaded as $name => $def) {
-    $endpoints[$name] = $def;
-  }
-
-  // Allow modules to alter the endpoints
-  drupal_alter('services_endpoints', $endpoints);
-
-  // Enforce the $include_disabled setting
-  if (!$include_disabled) {
-    foreach ($endpoints as $name => $def) {
-      // When the enabled attribute isn't set it's interpreted as enabled
-      if (isset($def['enabled']) && !$def['enabled']) {
-        unset($endpoints[$name]);
-      }
-      else {
-        $endpoints[$name]['enabled'] = TRUE;
-      }
-    }
-  }
-
-  return $endpoints;
-}
-
-/**
- * Implementation of hook_services_endpoints_load().
- */
-function services_services_endpoints_load($include_disabled = FALSE) {
-  $endpoints = array();
-
-  // Load endpoint from the database
-  if ($include_disabled) {
-    $res = db_query('SELECT * FROM {services_endpoint}');
-  }
-  else {
-    $res = db_query('SELECT * FROM {services_endpoint} WHERE enabled=1');
-  }
-
-  while ($row = db_fetch_array($res)) {
-    $endpoints[$row['endpoint']] = _services_endpoint_from_result($row);
-  }
-
-  return $endpoints;
-}
-
-function _services_endpoint_from_result($row) {
-  $decode = array(
-    'authentication_settings', 'resources',
-  );
-
-  // Decode the json data
-  foreach ($decode as $key) {
-    if (!empty($row[$key])) {
-      $row[$key] = json_decode($row[$key], TRUE);
-    }
-    else {
-      unset($row[$key]);
-    }
-  }
-
-  return $row;
 }
 
 /**

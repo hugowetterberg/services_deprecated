@@ -34,9 +34,9 @@ function services_controller_execute($controller, $args = array(), $options=arra
   // Check authentication
   if (!isset($options['skip_authentication']) || !$options['skip_authentication']) {
     $endpoint_name = services_get_server_info('endpoint');
-    $endpoint = services_get_endpoint($endpoint_name);
+    $endpoint = services_endpoint_load($endpoint_name);
 
-    if ($auth_error = services_auth_invoke($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
+    if ($auth_error = services_auth_invoke($endpoint->authentication, 'authenticate_call', $controller, $args)) {
       return services_error($auth_error, 401);
     }
   }

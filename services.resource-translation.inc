@@ -2,12 +2,6 @@
 // $Id: services.resource-translation.inc,v 1.1.2.4 2009/12/03 05:52:08 heyrocker Exp $
 
 /**
- * @author Services Dev Team
- * @file
- *  Resource translation functions for Services.
- */
-
-/**
  * @file
  *  Contains the necessary functionality for translating resources to services
  *  methods and vice versa.

@@ -2,9 +2,8 @@
 // $Id: node_resource.models.inc,v 1.1.2.2 2009/12/04 00:52:48 heyrocker Exp $
 
 /**
- * @author Services Dev Team
  * @file
- *  CRUD resource funcionality for nodes.
+ *  CRUD resource functionality for nodes.
  */
 
 class NodeResourceFeedModel implements ResourceTimeFeedModel {

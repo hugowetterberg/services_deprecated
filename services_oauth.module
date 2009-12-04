@@ -6,15 +6,15 @@
  */
 function services_oauth_authentication_info() {
   return array(
-    '#file' => 'services_oauth.inc',
-    '#title' => t('OAuth authentication'),
-    '#description' => t('An open protocol to allow secure API authorization'),
+    '#file'             => 'services_oauth.inc',
+    '#title'            => t('OAuth authentication'),
+    '#description'      => t('An open protocol to allow secure API authorization'),
     'security_settings' => '_services_oauth_security_settings',
     'authenticate_call' => '_services_oauth_authenticate_call',
   );
 }
 
-function services_oauth_services_resource_operation_settings_alter(&$settings, $endpoint, $resource, $class, $name=NULL) {
+function services_oauth_services_resource_operation_settings_alter(&$settings, $endpoint, $resource, $class, $name = NULL) {
   require_once('services_oauth.admin.inc');
   if ($endpoint->authentication == 'services_oauth') {
     $oauth_context = $endpoint->authentication_settings['oauth_context'];

@@ -23,22 +23,22 @@
 function _services_oauth_admin_authentication_options(&$element, $controller, $auth_levels) {
   $endpoint = $controller['endpoint'];
   $element['oauth_credentials'] = array(
-    '#type' => 'select',
-    '#title' => t('Required authentication'),
-    '#description' => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
-    '#options' => array(
-      'none' => t('None'),
+    '#type'          => 'select',
+    '#options'       => array(
+      'none'              => t('None'),
       'unsigned_consumer' => t('Unsigned with consumer key'),
-      'consumer' => t('Consumer key'),
-      'token' => t('Consumer key and access token'),
+      'consumer'          => t('Consumer key'),
+      'token'             => t('Consumer key and access token'),
     ),
     '#default_value' => !empty($endpoint['oauth_credentials']) ? $endpoint['oauth_credentials'] : 'token',
+    '#title'         => t('Required authentication'),
+    '#description'   => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
   );
 
   $element['oauth_authorization'] = array(
-    '#type' => 'select',
-    '#title' => t('Required authorization'),
-    '#options' => $auth_levels,
+    '#type'          => 'select',
+    '#options'       => $auth_levels,
     '#default_value' => !empty($endpoint['oauth_authorization']) ? $endpoint['oauth_authorization'] : '*',
+    '#title'         => t('Required authorization'),
   );
 }

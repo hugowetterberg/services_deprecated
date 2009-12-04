@@ -12,8 +12,8 @@
  *  Returns nothing, or a error message if authentication fails
  */
 function _services_oauth_authenticate_call($method, $args) {
-  $endpoint = $method['endpoint'];
-  $cred = isset($endpoint['oauth_credentials']) ? $endpoint['oauth_credentials'] : 'token';
+  $endpoint   = $method['endpoint'];
+  $cred       = isset($endpoint['oauth_credentials']) ? $endpoint['oauth_credentials'] : 'token';
   $auth_level = isset($endpoint['oauth_authorization']) ? $endpoint['oauth_authorization'] : '*';
 
   // If no credentials are needed we'll pass this one through
@@ -24,18 +24,16 @@ function _services_oauth_authenticate_call($method, $args) {
   try {
     module_load_include('inc', 'oauth_common');
 
-    $endpoint_name = services_get_server_info('endpoint');
+    $endpoint_name    = services_get_server_info('endpoint');
     $service_endpoint = services_endpoint_load($endpoint_name);
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
-    if (!$signed && ($cred=='consumer' || $cred=='token')) {
+    if (!$signed && ($cred == 'consumer' || $cred == 'token')) {
       throw new OAuthException('The request must be signed');
     }
-
-    if ($consumer==NULL) {
+    if ($consumer == NULL) {
       throw new OAuthException('Missing consumer token');
     }
-
     if ($consumer->context !== $service_endpoint->authentication_settings['oauth_context']) {
       throw new OAuthException('The consumer is not valid in the current context');
     }
@@ -45,11 +43,9 @@ function _services_oauth_authenticate_call($method, $args) {
       if (empty($token->key)) {
         throw new OAuthException('Missing access token');
       }
-
       if (!$token->authorized) {
         throw new OAuthException('The access token is not authorized');
       }
-
       // Check that the consumer has been granted the required authorization level
       if (!in_array('*', $token->services) && !in_array($auth_level, $token->services)) {
         throw new OAuthException('The consumer is not authorized to access this service');
@@ -76,14 +72,11 @@ function _services_oauth_authenticate_call($method, $args) {
 function _services_oauth_security_settings($settings) {
   $form = array();
   $form['oauth_context'] = array(
-    '#type' => 'select',
-    '#title' => t('OAuth context'),
-    '#description' => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. ' .
-      'Different services contexts may share OAuth contexts and thereby allow the use of consumers and tokens across the services context boundraries.'),
-    '#options' => array(
-      '' => t('-- Select a OAuth context'),
-    ),
+    '#type'          => 'select',
+    '#options'       => array('' => t('-- Select an OAuth context')),
     '#default_value' => isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
+    '#title'         => t('OAuth context'),
+    '#description'   => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. Different services contexts may share OAuth contexts and thereby allow the use of consumers and tokens across the services context boundraries.'),
   );
 
   $contexts = oauth_common_authorization_contexts();

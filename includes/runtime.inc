@@ -36,8 +36,10 @@ function services_controller_execute($controller, $args = array(), $options=arra
     $endpoint_name = services_get_server_info('endpoint');
     $endpoint = services_get_endpoint($endpoint_name);
 
-    if ($auth_error = services_auth_invoke($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
-      return services_error($auth_error, 401);
+    if (!empty($endpoint['authentication'])) { // Only check authentication if there's a configured authentication module
+      if ($auth_error = services_auth_invoke_custom($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
+        return services_error($auth_error, 401);
+      }
     }
   }
 

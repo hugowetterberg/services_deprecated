@@ -1,9 +1,8 @@
 <?php
 // $Id: services.install,v 1.3.2.21 2009/05/26 02:55:14 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
- *   Install, uninstall and update the module.
+ * Install, uninstall and update the Services module.
  */
 
 /**
@@ -14,7 +13,19 @@ function services_schema() {
 
   $schema['services_endpoint'] = array(
     'description' => 'Stores endpoint information for services',
+    'export' => array(
+      'identifier'      => 'endpoint',
+      'export callback' => 'services_endpoint_export',
+      'list callback'   => 'services_endpoint_list',
+      'key'             => 'endpoint', //TODO: Change this to "name" as is the Chaos Tools default?
+    ),
     'fields' => array(
+      'eid' => array(
+        'type'        => 'serial',
+        'description' => 'Primary ID field for the table. Not used for anything except internal lookups.',
+        'not null'    => TRUE,
+        'no export'   => TRUE,
+      ),
       'endpoint' => array(
         'description' => 'The name of the endpoint.',
         'type'        => 'varchar',
@@ -26,12 +37,6 @@ function services_schema() {
         'type'        => 'varchar',
         'length'      => 255,
         'not null'    => TRUE,
-      ),
-      'enabled'       => array(
-        'description' => 'Whether the the endpoint is enabled or not',
-        'type'        => 'int',
-        'size'        => 'tiny',
-        'default'     => 1,
       ),
       'server' => array(
         'description' => 'The name of the server used in this endpoint.',
@@ -53,18 +58,26 @@ function services_schema() {
         'default'     => '',
       ),
       'authentication_settings' => array(
-        'description' => 'The settings for the authentication module serialized as JSON.',
-        'type'        => 'text',
-        'not null'    => TRUE,
-        'default'     => '',
+        'description'    => 'The settings for the authentication module.',
+        'type'           => 'text',
+        'size'           => 'big',
+        'not null'       => TRUE,
+        'serialize'      => TRUE,
+        'object default' => array(),
       ),
       'resources' => array(
-        'description' => 'Information about the resources exposed in this endpoint, serialized as JSON.',
-        'type'        => 'text',
-        'not null'    => TRUE,
+        'description'    => 'Information about the resources exposed in this endpoint.',
+        'type'           => 'text',
+        'size'           => 'big',
+        'not null'       => TRUE,
+        'serialize'      => TRUE,
+        'object default' => array(),
       ),
     ),
-    'primary key' => array('endpoint'),
+    'primary key' => array('eid'),
+    'unique keys' => array(
+      'endpoint' => array('endpoint'),
+    ),
   );
 
   return $schema;
@@ -83,7 +96,7 @@ function services_install() {
 function services_uninstall() {
   drupal_uninstall_schema('services');
   $ret = array();
-  
+
   // Drop legacy tables
   $legacy_tables = array('services_keys', 'services_timestamp_nonce');
   foreach ($legacy_tables as $table) {
@@ -129,9 +142,9 @@ function services_update_6001() {
         'default'     => ''
       ),
     ),
-    'indexes' => array( 
-       'timestamp' => array('timestamp'), 
-    ), 
+    'indexes' => array(
+       'timestamp' => array('timestamp'),
+    ),
     'primary key' => array('nonce'),
   );
   $update = array();

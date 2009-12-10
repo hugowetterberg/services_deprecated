@@ -48,7 +48,7 @@ class NodeResourceFeedModelItem implements ResourceTimeFeedModelItem {
   protected $mode = 'raw';
   protected $item_length = 'fulltext';
 
-  public function __construct($data, $mode='raw', $item_length='fulltext') {
+  public function __construct($data, $mode = 'raw', $item_length = 'fulltext') {
     $this->node = $data;
     $this->mode = $mode;
     $this->item_length = $item_length;

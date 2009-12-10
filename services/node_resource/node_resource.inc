@@ -93,9 +93,9 @@ function _node_resource_index($page = 0, $fields = array(), $parameters = array(
     list($sql, $params) = $builder->query($fields, $parameters);
   }
   else {
-    $sql = "SELECT * FROM {node} WHERE status=1 ORDER BY sticky DESC, created DESC";
+    $sql = "SELECT * FROM {node} WHERE status = 1 ORDER BY sticky DESC, created DESC";
   }
-  $res = db_query_range($sql, $params, $page*20, 20);
+  $res = db_query_range($sql, $params, $page * 20, 20);
 
   $events = array();
   while ($event = db_fetch_object($res)) {

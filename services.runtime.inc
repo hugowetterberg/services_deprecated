@@ -1,4 +1,6 @@
 <?php
+// $Id$
+
 /**
  * @file
  *  Contains functions that only are necessary when a service call is made.
@@ -18,7 +20,7 @@
  *  services-specific authentication checks. Access checks will always be
  *  made.
  */
-function services_controller_execute($controller, $args = array(), $options=array()) {
+function services_controller_execute($controller, $args = array(), $options = array()) {
   // Check for missing arguments.
   $hash_parameters = array();
   foreach ($controller['args'] as $key => $arg) {
@@ -34,7 +36,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
   // Check authentication
   if (!isset($options['skip_authentication']) || !$options['skip_authentication']) {
     $endpoint_name = services_get_server_info('endpoint');
-    $endpoint = services_get_endpoint($endpoint_name);
+    $endpoint = services_endpoint_load($endpoint_name);
 
     if (!empty($endpoint['authentication'])) { // Only check authentication if there's a configured authentication module
       if ($auth_error = services_auth_invoke($endpoint['authentication'], 'authenticate_call', $controller, $args)) {
@@ -45,7 +47,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
 
   // Load the proper file
   if ($file = $controller['file']) {
-    module_load_include($file['file'], $file['module'], (isset($file['name'])?$file['name']:NULL));
+    module_load_include($file['file'], $file['module'], (isset($file['name']) ? $file['name'] : NULL));
   }
 
   // Construct access arguments array
@@ -64,7 +66,7 @@ function services_controller_execute($controller, $args = array(), $options=arra
   if (call_user_func_array($controller['access callback'], $access_arguments) != TRUE) {
     global $user;
     return services_error(t('Access denied for user !uid "@user"', array(
-      '!uid' => $user->uid,
+      '!uid'  => $user->uid,
       '@user' => $user->name,
     )), 401);
   }
@@ -153,7 +155,7 @@ function services_auth_invoke($module, $method, &$arg1 = NULL, &$arg2 = NULL, &$
       return call_user_func_array($func, $args);
     }
   }
-  else{
+  else {
     return TRUE;
   }
 }
@@ -303,7 +305,10 @@ function services_session_load($sessid) {
 
   // Some client/servers, like XMLRPC, do not handle cookies, so imitate it to make sess_read() function try to look for user,
   // instead of just loading anonymous user :).
-  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $sessid;
+  $session_name = session_name();
+  if (!isset($_COOKIE[$session_name])) {
+    $_COOKIE[$session_name] = $sessid;
+  }
 
   // Load session data
   session_id($sessid);
@@ -334,7 +339,10 @@ function services_session_unload($backup) {
 
   // Some client/servers, like XMLRPC, do not handle cookies, so imitate it to make sess_read() function try to look for user,
   // instead of just loading anonymous user :).
-  if (!isset($_COOKIE[session_name()])) $_COOKIE[session_name()] = $backup->sessid;
+  $session_name = session_name();
+  if (!isset($_COOKIE[$session_name])) {
+    $_COOKIE[$session_name] = $backup->sessid;
+  }
 
   // Save current session data
   sess_write($user->sid, session_encode());

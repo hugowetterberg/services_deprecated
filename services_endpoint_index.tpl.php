@@ -26,11 +26,11 @@ drupal_add_css(drupal_get_path('module', 'services') . '/css/admin.css');
           <ul>
             <?php foreach ($info['resources'] as $rname => $conf): ?>
               <li>
-                <?php 
+                <?php
                   if (isset($conf['alias'])) {
                     print t('!alias (!name)', array(
                       '!alias' => $conf['alias'],
-                      '!name' => $rname,
+                      '!name'  => $rname,
                     ));
                   }
                   else {
@@ -44,10 +44,7 @@ drupal_add_css(drupal_get_path('module', 'services') . '/css/admin.css');
       </div>
     </div>
     <?php
-      print l(t('Edit !title', array('!title' => $info['title'],)), 
-        'admin/build/services/endpoints/' . $name,
-        array('attributes' => array('class' => 'edit-endpoint'))
-      );
+      print l(t('Edit !title', array('!title' => $info['title'])), 'admin/build/services/endpoints/' . $name, array('attributes' => array('class' => 'edit-endpoint')));
     ?>
   </div>
-<?php endforeach ?>
+<?php endforeach;

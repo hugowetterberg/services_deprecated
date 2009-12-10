@@ -1,4 +1,5 @@
 <?php
+// $Id$
 
 /**
  * @file
@@ -15,7 +16,7 @@
  * @return array
  *  The resource definitions.
  */
-function _services_build_resources($endpoint_name='') {
+function _services_build_resources($endpoint_name = '') {
   // Get all installed resources
   $resources = module_invoke_all('services_resources');
   _services_strip_hashes($resources);
@@ -23,9 +24,9 @@ function _services_build_resources($endpoint_name='') {
   // Load the endpoint
   $endpoint = NULL;
   if (!empty($endpoint_name)) {
-    $endpoint = services_get_endpoint($endpoint_name);
+    $endpoint = services_endpoint_load($endpoint_name);
     // Apply the endpoint on the services
-    _services_apply_endpoint($resources, $endpoint, TRUE);
+    services_endpoint_callback($resources, $endpoint, TRUE);
   }
 
   drupal_alter('services_resources', $resources, $endpoint);
@@ -48,13 +49,14 @@ function _services_build_resources($endpoint_name='') {
   // Do some endpoint-dependent processing
   if ($endpoint) {
     // Let the authentication module alter our controllers
-    if (!empty($endpoint['authentication'])) {
-      services_auth_invoke($endpoint['authentication'], 'alter_controllers', $controllers, $endpoint);
+    if (!empty($endpoint->authentication)) {
+      services_auth_invoke($endpoint->authentication, 'alter_controllers', $controllers, $endpoint);
     }
 
     // Apply any aliases from endpoint
-    if (!empty($endpoint))
-    $aliased = array();
+    if (!empty($endpoint)) {
+      $aliased = array();
+    }
     foreach ($resources as $key => $def) {
       if (!empty($def['endpoint']['alias'])) {
         $aliased[$def['endpoint']['alias']] = $def;
@@ -98,12 +100,12 @@ function _services_strip_hashes(&$array) {
  * @param array $endpoint
  *  A endpoint information array.
  * @param bool $strict
- *  Optional. 
+ *  Optional.
  * @return void
  */
-function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
+function _services_apply_endpoint(&$resources, $endpoint, $strict = TRUE) {
   foreach ($resources as $name => &$resource) {
-    $cres = $endpoint && isset($endpoint['resources'][$name]) ? $endpoint['resources'][$name] : array();
+    $cres = ($endpoint && isset($endpoint->resources[$name])) ? $endpoint->resources[$name] : array();
     $resource['endpoint'] = $cres;
 
     if ($strict && empty($cres)) {
@@ -154,7 +156,7 @@ function _services_apply_endpoint(&$resources, $endpoint, $strict=TRUE) {
 function _services_process_resource($name, &$resource, &$controllers) {
   $resource['name'] = $name;
 
-  $keys = array('retrieve','create','update','delete');
+  $keys = array('retrieve', 'create', 'update', 'delete');
   foreach ($keys as $key) {
     if (isset($resource[$key])) {
       $controllers[$name . '/' . $key] = &$resource[$key];
@@ -220,11 +222,13 @@ function _services_legacy_services_as_resources() {
     $controller = $service;
     $controller['args'] = array();
 
-    foreach ($service['args'] as $arg) {
-      $arg['source'] = array(
-        'data' => $arg['name'],
-      );
-      $controller['args'][] = $arg;
+    if (!empty($service['args'])) {
+      foreach ($service['args'] as $arg) {
+        $arg['source'] = array(
+          'data' => $arg['name'],
+        );
+        $controller['args'][] = $arg;
+      }
     }
 
     $resources['service_' . $signature[0]]['actions'][$signature[1]] = $controller;

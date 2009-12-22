@@ -26,7 +26,7 @@ function _services_build_resources($endpoint_name = '') {
   if (!empty($endpoint_name)) {
     $endpoint = services_endpoint_load($endpoint_name);
     // Apply the endpoint on the services
-    services_endpoint_callback($resources, $endpoint, TRUE);
+    _services_apply_endpoint($resources, $endpoint, TRUE);
   }
 
   drupal_alter('services_resources', $resources, $endpoint);

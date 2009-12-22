@@ -217,7 +217,6 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
   $form['authentication_settings'] = array(
     '#prefix' => '<div id="security-module-options">',
     '#suffix' => '</div>',
-    '#tree'   => TRUE,
     '#endpoint_attribute' => TRUE,
     'settings' => array(
       '#value' => '<div class="description"></div>',
@@ -228,7 +227,9 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
   if (!empty($endpoint->authentication)) {
     $settings = services_auth_invoke($endpoint->authentication, 'security_settings', $endpoint->authentication_settings);
     if (is_array($settings)) {
-      $form['authentication_settings']['settings'] = $settings;
+      foreach ($settings as $key => $field) {
+        $form['authentication_settings']['settings'][$endpoint->authentication . '_' . $key] = $field;
+      }
     }
   }
 
@@ -274,7 +275,16 @@ function services_edit_form_endpoint_submit($form, &$form_state) {
   $endpoint->server         = $form_state['values']['server'];
   $endpoint->path           = $form_state['values']['path'];
   $endpoint->authentication = $form_state['values']['authentication'];
-  $endpoint->authentication_settings = $form_state['values']['authentication_settings']['settings'];
+
+  $auth_settings = array();
+  $auth_name_length = strlen($endpoint->authentication);
+  foreach ($form_state['values'] as $key => $value) {
+    if (substr($key, 0, $auth_name_length + 1) == $endpoint->authentication . '_') {
+      $auth_settings[substr($key, $auth_name_length +1)] = $value;
+    }
+  }
+  error_log(var_export($auth_settings, TRUE));
+  $endpoint->authentication_settings = $auth_settings;
 
   if (empty($endpoint->eid)) {
     drupal_set_message(t('Your new endpoint %title has been saved.', array('%title' => $endpoint->title)));
@@ -618,8 +628,12 @@ function _services_ahah_security_options() {
   $cached_form_state = array();
   $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
 
+  $settings = NULL;
   if (!empty($_POST['authentication'])) {
-    $settings = services_auth_invoke($_POST['authentication'], 'security_settings');
+    $auth_settings = services_auth_invoke($_POST['authentication'], 'security_settings');
+    foreach ($auth_settings as $key => $field) {
+      $settings[$_POST['authentication'] . '_' . $key] = $field;
+    }
   }
 
   if (is_array($settings)) {

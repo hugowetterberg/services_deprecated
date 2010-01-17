@@ -47,7 +47,7 @@ function services_controller_execute($controller, $args = array(), $options = ar
 
   // Load the proper file
   if ($file = $controller['file']) {
-    module_load_include($file['file'], $file['module'], (isset($file['name']) ? $file['name'] : NULL));
+    module_load_include($file['type'], $file['module'], (isset($file['name']) ? $file['name'] : NULL));
   }
 
   // Construct access arguments array

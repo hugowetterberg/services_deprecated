@@ -39,6 +39,12 @@ function _services_build_resources($endpoint_name = '') {
 
   // Make sure that we got a access callback for all resources
   foreach ($controllers as &$controller) {
+    if (!empty($controller['file'])) {
+      // Convert old-style file references to something that fits module_load_include() better.
+      if (!empty($controller['file']['file']) && empty($controller['file']['type'])) {
+        $controller['file']['type'] = $controller['file']['file'];
+      }
+    }
     if (!isset($controller['access callback'])) {
       $controller['access callback'] = 'services_access_menu';
     }

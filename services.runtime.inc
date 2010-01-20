@@ -8,6 +8,79 @@
  */
 
 /**
+ * A exception thrown by services and related modules when something goes
+ * wrong.
+ */
+class ServicesException extends Exception {
+  private $data;
+
+  /**
+   * Constructor for the ServicesException.
+   *
+   * @param string $message
+   *  Error message.
+   * @param int $code
+   *  Optional. Error code. This often maps to the HTTP status codes. Defaults
+   *  to 0.
+   * @param mixed $data
+   *  Information that can be used by the server to return information about
+   *  the error.
+   */
+  public function __construct($message, $code = 0, $data = NULL) {
+    parent::__construct($message, $code);
+
+    $this->data = $data;
+  }
+
+  /**
+   * Returns the data associated with the exception.
+   *
+   * @return mixed
+   */
+  public function getData() {
+    return $this->data;
+  }
+}
+
+/**
+ * A exception thrown by services and related modules when an error related to
+ * a specific argument is encountered.
+ */
+class ServicesArgumentException extends ServicesException {
+  private $argument;
+
+  /**
+   * Constructor for the ServicesException.
+   *
+   * @param string $message
+   *  Error message.
+   * @param string $argument_name
+   *  The name of the argument that caused the error.
+   * @param int $code
+   *  Optional. Error code. This often maps to the HTTP status codes. Defaults
+   *  to 0.
+   * @param mixed $data
+   *  Information that can be used by the server to return information about
+   *  the error.
+   */
+  public function __construct($message, $argument_name, $code, $data) {
+    parent::__construct($message, $code, $data);
+
+    $this->argument = $argument_name;
+  }
+
+  /**
+   * Returns the name of the argument that caused the error.
+   *
+   * @return string
+   *  The name of the argument.
+   */
+  public function getArgumentName() {
+    return $this->argument;
+  }
+}
+
+/**
  * Performs access checks and executes a services controller.
  * This method is called by server implementations.
  *
@@ -248,20 +321,10 @@ function services_server_info_object($reset = FALSE) {
  * @param int $code
  *  Optional. Error code. This often maps to the HTTP status codes. Defaults
  *  to 0.
- * @param Exception $exception
- *  Optional. The exception, if any, that was thrown when the error occured.
  * @return mixed
  */
-function services_error($message, $code = 0, $exception = NULL) {
-  $server_module = services_get_server_info('module');
-
-  // Look for custom error handling function.
-  // Should be defined in all server modules.
-  if ($server_module && function_exists($server_module . '_server_error')) {
-    $message = call_user_func($server_module . '_server_error', $message, $code, $exception);
-  }
-
-  return $message;
+function services_error($message, $code = 0) {
+  throw new ServicesException($message, $code);
 }
 
 /**

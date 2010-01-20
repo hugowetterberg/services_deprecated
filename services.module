@@ -80,14 +80,14 @@ function services_menu() {
   $items['admin/config/services/services/%services_endpoint/export'] = array(
     'title'          => 'Export endpoint',
     'page callback'  => 'drupal_get_form',
-    'page arguments' => array('services_export_endpoint', 3),
+    'page arguments' => array('services_export_endpoint', 4),
     'type'           => MENU_LOCAL_TASK,
     'weight'         => 20,
   ) + $base;
   $items['admin/config/services/services/%services_endpoint/delete'] = array(
     'title'          => 'Delete endpoint',
     'page callback'  => 'drupal_get_form',
-    'page arguments' => array('services_delete_confirm_endpoint', 3),
+    'page arguments' => array('services_delete_confirm_endpoint', 4),
     'type'           => MENU_CALLBACK,
   ) + $base;
   $items['admin/config/services/services/%services_endpoint/disable'] = array(
@@ -323,7 +323,10 @@ function services_endpoint_save($endpoint) {
  * @return void
  */
 function services_endpoint_delete($endpoint) {
-  db_query("DELETE FROM {services_endpoint} WHERE endpoint = '%s' AND eid = %d", $endpoint->endpoint, $endpoint->eid);
+  $num_deleted = db_delete('services_endpoint')
+    ->condition('endpoint', $endpoint->endpoint)
+    ->condition('eid', $endpoint->eid)
+    ->execute();
   menu_rebuild();
   cache_clear_all('services:' . $endpoint->endpoint . ':', 'cache', TRUE);
 }

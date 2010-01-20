@@ -30,77 +30,87 @@ function services_list_endpoint($js = NULL) {
     if (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Edit'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/edit',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/edit',
       );
       $operations[] = array(
         'title' => t('Export'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/export',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/export',
       );
     }
 
     if ($endpoint->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
       $operations[] = array(
         'title' => t('Revert'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/delete',
       );
     }
     elseif ($endpoint->export_type != EXPORT_IN_CODE) {
       $operations[] = array(
         'title' => t('Delete'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/delete',
       );
     }
     elseif (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Disable'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/disable',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/disable',
         'query' => drupal_get_destination(),
       );
     }
     else {
       $operations[] = array(
         'title' => t('Enable'),
-        'href'  => 'admin/build/services/' . $endpoint->endpoint . '/enable',
+        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/enable',
         'query' => drupal_get_destination(),
       );
     }
 
+    $row_class = array('services-endpoint-' . $endpoint->endpoint);
+    if (!empty($endpoint->disabled)) {
+      $row_class[] = 'services-endpoint-disabled';
+    }
     $rows[$endpoint->endpoint] = array(
       'data' => array(
         'title' => array(
           'data'  => $endpoint->title,
-          'class' => 'services-endpoint-title',
+          'class' => array('services-endpoint-title'),
         ),
         'path' => array(
           'data'  => l($endpoint->path, $endpoint->path),
-          'class' => 'services-endpoint-path',
+          'class' => array('services-endpoint-path'),
         ),
         'server' => array(
           'data'  => check_plain($endpoint->server),
-          'class' => 'services-endpoint-server',
+          'class' => array('services-endpoint-server'),
         ),
         'authentication' => array(
           'data'  => check_plain($endpoint->authentication),
-          'class' => 'services-endpoint-authentication',
+          'class' => array('services-endpoint-authentication'),
         ),
         'storage' => array(
           'data'  => ($endpoint->export_type == EXPORT_IN_CODE) ? t('In code') : t('In database'),
-          'class' => 'services-endpoint-storage',
+          'class' => array('services-endpoint-storage'),
         ),
         'operations' => array(
-          'data'  => theme('links', $operations),
-          'class' => 'services-endpoint-operations',
+          'data'  => array(
+            '#theme' => 'links',
+            '#links' => $operations,
+          ),
+          'class' => array('services-endpoint-operations'),
         ),
       ),
-      'class' => 'services-endpoint-' . $endpoint->endpoint . (!empty($endpoint->disabled) ? ' services-endpoint-disabled' : ''),
+      'class' => $row_class,
     );
   }
 
-  $table = theme('table', $header, $rows, array('id' => 'services-list-endpoint'));
-
   drupal_add_css(drupal_get_path('module', 'services') . '/css/services.admin.css');
 
-  return $table;
+  return drupal_render($table = array(
+    '#theme' => 'table',
+    '#header' => $header,
+    '#rows' => $rows,
+    '#empty' => t('No endpoints defined'),
+  ));
 }
 
 /**
@@ -130,7 +140,9 @@ function services_edit_endpoint($endpoint) {
 /**
  * Form to edit the settings of an endpoint.
  */
-function services_edit_form_endpoint(&$form_state, $endpoint) {
+function services_edit_form_endpoint(&$form_state, $form_info) {
+  list($endpoint) = $form_info['build_info']['args'];
+
   // Loading runtime include as needed by services_auth_info().
   module_load_include('runtime.inc', 'services');
 
@@ -206,7 +218,7 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
     '#description'   => t('Choose an authentication scheme should be used with your endpoint.'),
     '#required'      => FALSE,
     '#ahah'          => array(
-      'path'    => 'admin/build/services/ahah/security-options',
+      'path'    => 'admin/config/services/services/ahah/security-options',
       'wrapper' => 'security-module-options',
       'method'  => 'replace',
     ),
@@ -251,13 +263,16 @@ function services_edit_form_endpoint_validate($form, &$form_state) {
     form_error($form['name'], t('Endpoint name must be alphanumeric or underscores only.'));
   }
   else {
-    $query = "SELECT eid FROM {services_endpoint} WHERE endpoint = '%s'";
-    $args  = array($form_state['values']['endpoint']);
+    $query = db_select('services_endpoint', 'e');
+    $query->addField('e', 'eid');
+    $query->condition('endpoint', $form_state['values']['endpoint']);
+
     if (!empty($form_state['values']['eid']) && is_numeric($form_state['values']['eid'])) {
-      $query .= ' AND eid != %d';
-      $args[] = $form_state['values']['eid'];
+      $query->condition('eid', $form_state['values']['eid'], '!=');
     }
-    if (db_result(db_query($query, $args))) {
+
+    $res = $query->execute()->fetchField();
+    if (!empty($res)) {
       form_error($form['endpoint'], t('Endpoint name must be unique.'));
     }
   }
@@ -283,7 +298,6 @@ function services_edit_form_endpoint_submit($form, &$form_state) {
       $auth_settings[substr($key, $auth_name_length +1)] = $value;
     }
   }
-  error_log(var_export($auth_settings, TRUE));
   $endpoint->authentication_settings = $auth_settings;
 
   if (empty($endpoint->eid)) {
@@ -296,13 +310,14 @@ function services_edit_form_endpoint_submit($form, &$form_state) {
     services_endpoint_save($endpoint);
   }
 
-  $form_state['redirect'] = 'admin/build/services';
+  $form_state['redirect'] = 'admin/config/services/services';
 }
 
 /**
  * Page callback to export an endpoint to PHP code.
  */
-function services_export_endpoint(&$form_state, $endpoint) {
+function services_export_endpoint(&$form_state, $form_info) {
+  list($endpoint) = $form_info['build_info']['args'];
   if (!is_object($endpoint)) {
     $endpoint = services_endpoint_load($endpoint);
   }
@@ -323,10 +338,12 @@ function services_export_endpoint(&$form_state, $endpoint) {
 /**
  * Provide a form to confirm deletion of an endpoint.
  */
-function services_delete_confirm_endpoint(&$form_state, $endpoint) {
+function services_delete_confirm_endpoint(&$form_state, $form_info) {
+  list($endpoint) = $form_info['build_info']['args'];
   if (!is_object($endpoint)) {
     $endpoint = services_endpoint_load($endpoint);
   }
+
   if ($endpoint->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
     $title  = t('Are you sure you want to revert the endpoint "@title"?', array('@title' => $endpoint->title));
     $submit = t('Revert');
@@ -343,7 +360,7 @@ function services_delete_confirm_endpoint(&$form_state, $endpoint) {
   $form['eid']      = array('#type' => 'value', '#value' => $endpoint->eid);
   return confirm_form($form,
     $title,
-    !empty($_GET['destination']) ? $_GET['destination'] : 'admin/build/services',
+    !empty($_GET['destination']) ? $_GET['destination'] : 'admin/config/services/services',
     t('This action cannot be undone.'),
     $submit, t('Cancel')
   );
@@ -356,7 +373,7 @@ function services_delete_confirm_endpoint_submit($form, &$form_state) {
   $endpoint = services_endpoint_load($form_state['values']['endpoint']);
   if ($endpoint->eid == $form_state['values']['eid']) {
     services_endpoint_delete($endpoint);
-    $form_state['redirect'] = 'admin/build/services';
+    $form_state['redirect'] = 'admin/config/services/services';
   }
 }
 
@@ -399,7 +416,8 @@ function services_edit_endpoint_resources($endpoint) {
 /**
  * Form to add resources to an endpoint.
  */
-function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
+function services_edit_form_endpoint_resources(&$form_state, $form_info) {
+  list($endpoint) = $form_info['build_info']['args'];
   module_load_include('resource_build.inc', 'services');
 
   $form = array();
@@ -439,7 +457,7 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
       '#collapsed'   => TRUE,
       '#tree'        => TRUE,
       '#attributes'  => array(
-        'class' => 'resource',
+        'class' => array('resource'),
       ),
     );
 

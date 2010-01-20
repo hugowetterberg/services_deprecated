@@ -617,7 +617,7 @@ function _services_resource_operation_settings(&$settings, $endpoint, $resource,
       '#default_value' => !empty($rop['endpoint']) && $rop['endpoint']['enabled'],
     );
 
-    if ($rop['endpoint']['preprocess']) {
+    if (!empty($rop['endpoint']['preprocess'])) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Preprocess function'),
@@ -625,7 +625,7 @@ function _services_resource_operation_settings(&$settings, $endpoint, $resource,
       );
     }
 
-    if ($rop['endpoint']['postprocess']) {
+    if (!empty($rop['endpoint']['postprocess'])) {
       $res_set[$op]['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Postprocess function'),

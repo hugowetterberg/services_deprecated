@@ -27,10 +27,15 @@ function services_help($path, $arg) {
 }
 
 /**
- * Implementation of hook_perm().
+ * Implementation of hook_permission().
  */
-function services_perm() {
-  return array('administer services');
+function services_permission() {
+  return array(
+    'administer services' => array(
+      'title' => t('Administer services'),
+      'description' => t('Administer services and it\'s endpoints'),
+    ),
+  );
 }
 
 /**

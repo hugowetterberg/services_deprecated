@@ -1,5 +1,5 @@
 <?php
-// $Id: services.resource-translation.inc,v 1.1.2.4 2009/12/03 05:52:08 heyrocker Exp $
+// $Id: services.resource-translation.inc,v 1.1.2.5 2009/12/05 01:42:38 heyrocker Exp $
 
 /**
  * @file

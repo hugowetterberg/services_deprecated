@@ -1,5 +1,5 @@
 <?php
-// $Id: search_service.inc,v 1.1.2.8.2.2 2009/12/02 15:09:10 heyrocker Exp $
+// $Id: search_service.inc,v 1.1.2.8.2.3 2009/12/05 01:42:39 heyrocker Exp $
 /**
  * @file
  *  Link general search functionalities to services module.

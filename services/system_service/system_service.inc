@@ -1,5 +1,5 @@
 <?php
-// $Id: system_service.inc,v 1.1.2.5 2009/03/07 22:35:04 marcingy Exp $
+// $Id: system_service.inc,v 1.1.2.5.2.2 2009/12/19 08:18:23 heyrocker Exp $
 /**
  * @file
  *  Link general system functionalities to services module.
@@ -85,4 +85,13 @@ function system_service_getservices() {
 function system_service_cache_clear_all() {
   drupal_flush_all_caches();
   watchdog('cache clear service', 'caches cleared');
+}
+
+/**
+ * Log a system message.
+ *
+ * @see watchdog()
+ **/
+function system_service_watchdog_send($type, $message, $variables = array(), $severity = WATCHDOG_NOTICE, $link = NULL) {
+  watchdog($type, $message, $variables, $severity, $link);
 }

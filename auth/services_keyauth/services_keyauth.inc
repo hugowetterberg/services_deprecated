@@ -1,5 +1,5 @@
 <?php
-// $Id: services_keyauth.inc,v 1.1.2.8.2.9 2009/12/03 05:59:35 heyrocker Exp $
+// $Id: services_keyauth.inc,v 1.1.2.8.2.10 2009/12/11 14:32:42 heyrocker Exp $
 
 /**
  * @file
@@ -90,8 +90,9 @@ function _services_keyauth_alter_methods(&$methods) {
         $method['auth'] = FALSE;
         break;
       default:
-        $method['key'] = TRUE;
-        $method['auth'] = TRUE;
+        $method['key'] = isset($method['key']) ? FALSE : TRUE;
+        $method['auth'] = isset($method['auth']) ? FALSE : TRUE;
+        break;
     }
 
     if ($method['auth'] && variable_get('services_use_sessid', TRUE)) {

@@ -1,5 +1,5 @@
 <?php
-// $Id: node_resource.inc,v 1.1.2.2 2009/12/04 00:52:48 heyrocker Exp $
+// $Id: node_resource.inc,v 1.1.2.3 2009/12/05 01:42:38 heyrocker Exp $
 
 /**
  * @file

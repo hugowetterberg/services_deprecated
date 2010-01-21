@@ -1,5 +1,5 @@
 <?php
-// $Id: views_service.module,v 1.4.2.20.2.2 2009/11/27 16:51:00 heyrocker Exp $
+// $Id: views_service.module,v 1.4.2.20.2.3 2009/12/05 01:42:39 heyrocker Exp $
 /**
  * @file
  *  Link general views functionalities to services module.

@@ -1,7 +1,6 @@
 <?php
-// $Id: user_service.module,v 1.3.2.16.2.1 2009/10/15 03:54:06 marcingy Exp $
+// $Id: user_service.module,v 1.3.2.16.2.2 2009/12/05 01:42:39 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general user functionalities to services module.
  */

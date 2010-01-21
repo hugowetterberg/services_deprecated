@@ -1,8 +1,7 @@
 <?php
-// $Id: comment_service.inc,v 1.1.2.1.2.1 2009/12/04 00:42:03 heyrocker Exp $
+// $Id: comment_service.inc,v 1.1.2.1.2.2 2009/12/05 01:42:38 heyrocker Exp $
 
 /**
- * @author Services Dev Team
  * @file
  *  Link commenting functionality to services module.
  */

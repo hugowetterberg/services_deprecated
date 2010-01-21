@@ -1,13 +1,15 @@
 <?php
-// $Id: services_admin_browse.inc,v 1.5.2.45.2.3 2009/11/04 21:43:25 heyrocker Exp $
+// $Id: services_admin_browse.inc,v 1.5.2.45.2.5 2009/12/05 15:22:00 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Browser thru all services and servers.
  */
 
 /**
- * Callback for 'services/browse'.
+ * Page callback to list all enabled services and servers.
+ *
+ * @return 
+ *   List of services and servers with links to test them.
  */
 function services_admin_browse_index() {
   $methods = services_get_all();
@@ -59,6 +61,14 @@ function services_admin_browse_index() {
   return $output;
 }
 
+/**
+ * Display a form for the testing of a single service method in the browser.
+ *
+ * @param $method
+ *   The method to be tested
+ * @return
+ *   Form for testing and method parameter info.
+ */
 function services_admin_browse_method($method) {
   global $_services_admin_browse_test_submit_result;
 
@@ -95,6 +105,14 @@ function services_admin_browse_method($method) {
   return $output;
 }
 
+/**
+ * Build the form used for testing a service in the browser
+ *
+ * @return
+ *   FAPI array
+ * @ingroup forms
+ * @see services_admin_browse_test_submit() 
+ */
 function services_admin_browse_test() {
   $form = array();
   $method = services_method_get(arg(4));
@@ -155,6 +173,9 @@ function services_admin_browse_test() {
   return $form;
 }
 
+/**
+ * Submit callback for services_admin_browse_test().
+ */
 function services_admin_browse_test_submit($form, $form_state) {
   global $_services_admin_browse_test_submit_result;
   $method = services_method_get(arg(4));
@@ -214,7 +235,9 @@ function services_admin_browse_test_unserialize_args($values, $formats) {
 
   return $return;
 }
-
+/**
+ * Implementation of hook_theme();
+ */
 function theme_services_admin_browse_test($form) {
   $output = '';
   $output .= drupal_render($form['test']);
@@ -245,8 +268,13 @@ function theme_services_admin_browse_test($form) {
   return $output;
 }
 
-/*
- * Callback for admin page
+/**
+ * Build the admin settings form.
+ *
+ * @return
+ *   FAPI array
+ * @ingroup forms
+ * @see services_admin_settings_submit() 
  */
 function services_admin_settings() {
   $auth_modules = module_implements('authentication_info');
@@ -308,6 +336,9 @@ function services_admin_settings() {
   return $form;
 }
 
+/**
+ * Validate callback for services_admin_settings().
+ */
 function services_admin_settings_validate($form, $form_state) {
   // Invoke custom validation for the auth module
   if (!empty($form_state['values']['auth_module'])) {
@@ -316,6 +347,9 @@ function services_admin_settings_validate($form, $form_state) {
   }
 }
 
+/**
+ * Submit callback for services_admin_settings().
+ */
 function services_admin_settings_submit($form, $form_state) {
   // Update the services oauth module variable *if needed*.
   $old_auth = variable_get('services_auth_module', '');

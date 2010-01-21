@@ -1,7 +1,6 @@
 <?php
-// $Id: taxonomy_service.module,v 1.4.2.9.2.1 2009/10/15 03:54:06 marcingy Exp $
+// $Id: taxonomy_service.module,v 1.4.2.9.2.3 2009/12/17 05:51:33 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general taxonomy functionalities to services module.
  */
@@ -19,6 +18,13 @@ function taxonomy_service_help($path, $arg) {
 }
 
 /**
+ * Implementation of hook_perm().
+ */
+function taxonomy_service_perm() {
+  return array('administer taxonomy from remote');
+}
+
+/**
  * Implementation of hook_service().
  */
 function taxonomy_service_service() {
@@ -27,6 +33,7 @@ function taxonomy_service_service() {
     array(
         '#method'   => 'taxonomy.saveTerm',
         '#callback' => 'taxonomy_service_save_term',
+        '#access arguments'  => array('administer taxonomy from remote'),
         '#file'             => array('file' => 'inc', 'module' => 'taxonomy_service'),
         '#args'     => array(
           array(
@@ -43,6 +50,7 @@ function taxonomy_service_service() {
     array(
       '#method'   => 'taxonomy.saveVocabulary',
       '#callback' => 'taxonomy_service_save_vocabulary',
+      '#access arguments'  => array('administer taxonomy from remote'),
       '#file'             => array('file' => 'inc', 'module' => 'taxonomy_service'),
       '#args'     => array(
         array(

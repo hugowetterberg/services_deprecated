@@ -1,12 +1,20 @@
 <?php
-// $Id: services.resource-translation.inc,v 1.1.2.4 2009/12/03 05:52:08 heyrocker Exp $
+// $Id: services.resource-translation.inc,v 1.1.2.5 2009/12/05 01:42:38 heyrocker Exp $
 
 /**
- * @author Services Dev Team
  * @file
- *  Resource translation functions for Services.
+ *  Contains the necessary functionality for translating resources to services
+ *  methods and vice versa.
  */
 
+/**
+ * Returns the given resource as a set of services methods.
+ *
+ * @param array $resource
+ *  A resource definition.
+ * @return array
+ *  An array of services method definitions
+ */
 function _services_resource_as_services($resource) {
   static $controllers = array(
     'create' => 'create',
@@ -45,6 +53,10 @@ function _services_resource_as_services($resource) {
   return $methods;
 }
 
+/**
+ * Helper function for _services_resource_as_services() that turns a resource
+ * controller into a service method.
+ */
 function _services_resource_controller_as_service($resource, $name, $controller, $file) {
   $method = array_merge($controller, array(
     'method' => $resource .'_resource.'. $name,
@@ -57,6 +69,16 @@ function _services_resource_controller_as_service($resource, $name, $controller,
   return $method;
 }
 
+/**
+ * Turns an array of services methods into resources where all methods are
+ * added as actions. A 'menu.get'-method would be added as a 'get'-action on
+ * the resource 'service_menu'.
+ *
+ * @param array $services
+ *  An array of service methods.
+ * @return array
+ *  An array of resource definitions.
+ */
 function _services_services_as_resources($services) {
   $resources = array();
 

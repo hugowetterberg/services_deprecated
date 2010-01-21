@@ -1,7 +1,6 @@
 <?php
-// $Id: node_service.module,v 1.5.2.21.2.2 2009/10/15 03:54:05 marcingy Exp $
+// $Id: node_service.module,v 1.5.2.21.2.3 2009/12/05 01:42:39 heyrocker Exp $
 /**
- * @author Services Dev Team
  * @file
  *  Link general node functionalities to services module.
  */

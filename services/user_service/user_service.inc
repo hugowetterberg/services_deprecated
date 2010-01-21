@@ -1,8 +1,7 @@
 <?php
-// $Id: user_service.inc,v 1.1.2.8.2.2 2009/12/04 00:42:03 heyrocker Exp $
+// $Id: user_service.inc,v 1.1.2.8.2.4 2009/12/25 03:55:47 heyrocker Exp $
 
 /**
- * @author Services Dev Team
  * @file
  *  Link general user functionalities to services module.
  */
@@ -127,15 +126,54 @@ function user_service_logout() {
  */
 function user_service_save($account) {
   // if uid is present then update, otherwise insert
-  $update = user_load($account['uid']);
-  $account = isset($update->uid) ? user_save($update, $account) : user_save('', $account);
-  if (!$account) {
-    return services_error(t('Error on saving the user.'), 500);
+  $update = user_load($account['uid']);	
+  $form_state = array();
+  if (!isset($update->uid)) {
+    // register a new user
+    $form_state['values'] = $account;
+    $form_state['values']['pass'] = array(
+      'pass1' => $account['pass'],
+      'pass2' => $account['pass'],
+    );
+    $form_state['values']['op'] = t('Create new account');
+    $ret = drupal_execute('user_register', $form_state);
+  }
+  else {
+    // If a profile category was passed in, use it. Otherwise default
+    // to 'account' (for saving core user data.)
+    $category = 'account';
+    if (isset($account['category'])) {
+      $category = $account['category'];
+      unset($account['category']);
+    }
+    
+    // Any logged in user is by default authenticated,
+    // and leaving this role set in the user's roles array
+    // causes big problems because of a FAPI hack that controls
+    // this checkbox. Therefore we just force it to 0 here.
+    if (isset($account['roles'][2])) {
+      $account['roles'][2] = 0;
+    }
+
+    // Drop any passed in values into the $account var. Anything
+    // unused by the form just gets ignored.
+    foreach ($account as $key => $value) {
+      $form_state['values'][$key] = $value;
+    }
+
+    $form_state['values']['op'] = 'Save';
+    $form_state['values']['_category'] = $category;
+    $form_state['values']['_account'] = $account;
+    $ret = drupal_execute('user_profile_form', $form_state, (object) $account, $category);
   }
 
-  // Everything went right.
-  // Return the user ID
-  return $account->uid;
+  // Error if needed.
+  if ($errors = form_get_errors()) {
+    return services_error(implode("\n", $errors), 401);
+  }
+  else {
+    return $form_state['user']->uid;
+  }
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-// $Id: menu_service.inc,v 1.1.2.4 2009/05/30 21:38:02 marcingy Exp $
+// $Id: menu_service.inc,v 1.1.2.4.2.1 2010/01/23 15:35:34 hugowetterberg Exp $
 /**
  * @file
  * Adds a service type for a menu
@@ -46,7 +46,7 @@ function menu_service_process($data, $fields) {
         $tmp = (object) $item['link'];
       }
       if (!$fields || in_array('path_alias', $fields, TRUE)) {
-        $tmp->path_alias = drupal_get_path_alias($tmp->link_path);
+        $tmp->path_alias = drupal_get_path_alias($item['link']['link_path']);
       }
       $tmp->children = menu_service_process($item['below'], $fields);
       $out[] = $tmp;

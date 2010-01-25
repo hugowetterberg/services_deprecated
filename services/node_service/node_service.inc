@@ -18,11 +18,29 @@
  *   Object. The node object with all wanted fields.
  */
 function node_service_get($nid, $fields = array()) {
-  if (!$node = services_node_load(node_load(array('nid' => $nid)), $fields)) {
-    return services_error(t('Could not find the node.'), 401);
+  global $user;
+  $node = node_load(array('nid' => $nid));
+
+  if ($node) {
+    // Apply field level content permissions
+    if (module_exists('content')) {
+      $fields = content_fields(NULL, $node->type);
+      foreach ($fields as $field_name => $field_info) {
+        if (isset($node->$field_name)) {
+          $access = module_invoke_all('field_access', 'view', $field_info, $user, $node);
+          if (in_array(FALSE, $access)) {
+            unset($node->$field_name);
+          }
+        }
+      }
+    }
+    $result = services_node_load($node, $fields);
+  }
+  else {
+    $result = services_error(t('Could not find the node.'), 404);
   }
 
-  return $node;
+  return $result;
 }
 
 /**

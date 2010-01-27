@@ -119,7 +119,7 @@ function services_controller_execute($controller, $args = array(), $options = ar
   }
 
   // Load the proper file
-  if ($file = $controller['file']) {
+  if (!empty($controller['file']) && $file = $controller['file']) {
     module_load_include($file['type'], $file['module'], (isset($file['name']) ? $file['name'] : NULL));
   }
 

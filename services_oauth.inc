@@ -76,7 +76,7 @@ function _services_oauth_security_settings($settings) {
     '#options'       => array('' => t('-- Select an OAuth context')),
     '#default_value' => isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
     '#title'         => t('OAuth context'),
-    '#description'   => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. Different services contexts may share OAuth contexts and thereby allow the use of consumers and tokens across the services context boundraries.'),
+    '#description'   => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. Different services endpoints may share OAuth contexts and thereby allow the use of consumers and tokens across the services endpoint boundraries.'),
   );
 
   $contexts = oauth_common_authorization_contexts();

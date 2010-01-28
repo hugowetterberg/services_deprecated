@@ -113,7 +113,7 @@ function services_menu() {
         'title'             => 'Services endpoint',
         'access callback'   => 'services_access_menu',
         'page callback'     => 'services_endpoint_callback',
-        'page arguments'    => array($endpoint->endpoint),
+        'page arguments'    => array($endpoint->name),
         'type'              => MENU_CALLBACK,
       );
     }
@@ -309,7 +309,7 @@ function services_endpoint_save($endpoint) {
   $update = (isset($endpoint->eid)) ? array('eid') : array();
   drupal_write_record('services_endpoint', $endpoint, $update);
   menu_rebuild();
-  cache_clear_all('services:' . $endpoint->endpoint . ':', 'cache', TRUE);
+  cache_clear_all('services:' . $endpoint->name . ':', 'cache', TRUE);
 }
 
 /**
@@ -318,9 +318,9 @@ function services_endpoint_save($endpoint) {
  * @return void
  */
 function services_endpoint_delete($endpoint) {
-  db_query("DELETE FROM {services_endpoint} WHERE endpoint = '%s' AND eid = %d", $endpoint->endpoint, $endpoint->eid);
+  db_query("DELETE FROM {services_endpoint} WHERE name = '%s' AND eid = %d", $endpoint->name, $endpoint->eid);
   menu_rebuild();
-  cache_clear_all('services:' . $endpoint->endpoint . ':', 'cache', TRUE);
+  cache_clear_all('services:' . $endpoint->name . ':', 'cache', TRUE);
 }
 
 /**
@@ -343,7 +343,7 @@ function services_endpoint_list() {
   $return = array();
   $endpoints = services_endpoint_load_all();
   foreach ($endpoints as $endpoint) {
-    $return[$endpoint->endpoint] = $endpoint->title;
+    $return[$endpoint->name] = $endpoint->title;
   }
   return $return;
 }

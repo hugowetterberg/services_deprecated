@@ -17,7 +17,6 @@ function services_schema() {
       'identifier'      => 'endpoint',
       'export callback' => 'services_endpoint_export',
       'list callback'   => 'services_endpoint_list',
-      'key'             => 'endpoint', //TODO: Change this to "name" as is the Chaos Tools default?
     ),
     'fields' => array(
       'eid' => array(
@@ -26,7 +25,7 @@ function services_schema() {
         'not null'    => TRUE,
         'no export'   => TRUE,
       ),
-      'endpoint' => array(
+      'name' => array(
         'description' => 'The name of the endpoint.',
         'type'        => 'varchar',
         'length'      => 255,
@@ -76,7 +75,7 @@ function services_schema() {
     ),
     'primary key' => array('eid'),
     'unique keys' => array(
-      'endpoint' => array('endpoint'),
+      'name' => array('name'),
     ),
   );
 
@@ -183,7 +182,6 @@ function services_update_6300() {
       'identifier'      => 'endpoint',
       'export callback' => 'services_endpoint_export',
       'list callback'   => 'services_endpoint_list',
-      'key'             => 'endpoint', //TODO: Change this to "name" as is the Chaos Tools default?
     ),
     'fields' => array(
       'eid' => array(
@@ -192,7 +190,7 @@ function services_update_6300() {
         'not null'    => TRUE,
         'no export'   => TRUE,
       ),
-      'endpoint' => array(
+      'name' => array(
         'description' => 'The name of the endpoint.',
         'type'        => 'varchar',
         'length'      => 255,
@@ -242,7 +240,7 @@ function services_update_6300() {
     ),
     'primary key' => array('eid'),
     'unique keys' => array(
-      'endpoint' => array('endpoint'),
+      'name' => array('name'),
     ),
   ));
 

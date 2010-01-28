@@ -34,6 +34,16 @@ function services_perm() {
 }
 
 /**
+ * Implementation of hook_hook_info().
+ */
+function services_hook_info() {
+  $hooks['services_resources'] = array(
+    'group' => 'services',
+  );
+  return $hooks;
+}
+
+/**
  * Implementation of hook_menu().
  */
 function services_menu() {
@@ -255,7 +265,7 @@ function services_xml_output($xml) {
 
 /**
  * Create a new endpoint with defaults appropriately set from schema.
- * 
+ *
  * @return stdClass
  *  An endpoint initialized with the default values.
  */

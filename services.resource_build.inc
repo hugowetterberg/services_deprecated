@@ -120,10 +120,12 @@ function _services_apply_endpoint(&$resources, $endpoint, $strict = TRUE) {
     else {
       $crud = array('create', 'retrieve', 'update', 'delete', 'index');
       foreach ($crud as $op) {
-        $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
-        $resource[$op]['endpoint'] = $cop;
-        if ($strict && empty($cop)) {
-          unset($resource['' . $op]);
+        if (isset($resource[$op])) {
+          $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
+          $resource[$op]['endpoint'] = $cop;
+          if ($strict && empty($cop)) {
+            unset($resource['' . $op]);
+          }
         }
       }
 

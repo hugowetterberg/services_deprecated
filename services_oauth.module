@@ -4,26 +4,13 @@
 /**
  * Implementation of hook_services_authentication().
  */
-function services_oauth_authentication_info() {
+function services_oauth_services_authentication_info() {
   return array(
     '#file'             => 'services_oauth.inc',
     '#title'            => t('OAuth authentication'),
     '#description'      => t('An open protocol to allow secure API authorization'),
     'security_settings' => '_services_oauth_security_settings',
     'authenticate_call' => '_services_oauth_authenticate_call',
+    'controller_settings' => '_services_oauth_controller_settings',
   );
-}
-
-function services_oauth_services_resource_operation_settings_alter(&$settings, $endpoint, $resource, $class, $name = NULL) {
-  require_once('services_oauth.admin.inc');
-  if ($endpoint->authentication == 'services_oauth') {
-    $oauth_context = $endpoint->authentication_settings['oauth_context'];
-    if ($rop = get_resource_operation_info($resource, $class, $name)) {
-      $auth_levels = array();
-      foreach (oauth_common_authorization_levels($oauth_context) as $name => $level) {
-        $auth_levels[$name] = t($level->title);
-      }
-      _services_oauth_admin_authentication_options($settings, $rop, $auth_levels);
-    }
-  }
 }

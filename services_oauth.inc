@@ -4,6 +4,8 @@
 /**
  * Authenticates a call using OAuth to verify the request.
  *
+ * @param array $settings
+  *  The settings for the authentication module.
  * @param array $method
  *  The method that's being called
  * @param array $args
@@ -11,7 +13,7 @@
  * @return void|string
  *  Returns nothing, or a error message if authentication fails
  */
-function _services_oauth_authenticate_call($method, $args) {
+function _services_oauth_authenticate_call($settings, $method, $args) {
   $endpoint   = $method['endpoint'];
   $cred       = isset($endpoint['oauth_credentials']) ? $endpoint['oauth_credentials'] : 'token';
   $auth_level = isset($endpoint['oauth_authorization']) ? $endpoint['oauth_authorization'] : '*';
@@ -24,8 +26,6 @@ function _services_oauth_authenticate_call($method, $args) {
   try {
     module_load_include('inc', 'oauth_common');
 
-    $endpoint_name    = services_get_server_info('endpoint');
-    $service_endpoint = services_endpoint_load($endpoint_name);
     list($signed, $consumer, $token) = oauth_common_verify_request();
 
     if (!$signed && ($cred == 'consumer' || $cred == 'token')) {
@@ -34,7 +34,7 @@ function _services_oauth_authenticate_call($method, $args) {
     if ($consumer == NULL) {
       throw new OAuthException('Missing consumer token');
     }
-    if ($consumer->context !== $service_endpoint->authentication_settings['oauth_context']) {
+    if ($consumer->context !== $settings['context']) {
       throw new OAuthException('The consumer is not valid in the current context');
     }
 
@@ -71,18 +71,51 @@ function _services_oauth_authenticate_call($method, $args) {
 
 function _services_oauth_security_settings($settings) {
   $form = array();
-  $form['oauth_context'] = array(
+  $form['context'] = array(
     '#type'          => 'select',
     '#options'       => array('' => t('-- Select an OAuth context')),
-    '#default_value' => isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
+    '#default_value' => isset($settings['context']) ? $settings['context'] : '',
     '#title'         => t('OAuth context'),
+    '#required'      => TRUE,
     '#description'   => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. Different services endpoints may share OAuth contexts and thereby allow the use of consumers and tokens across the services endpoint boundraries.'),
   );
 
   $contexts = oauth_common_authorization_contexts();
   foreach ($contexts as $name => $levels) {
-    $form['oauth_context']['#options'][$name] = $name;
+    $form['context']['#options'][$name] = $name;
   }
+
+  return $form;
+}
+
+function _services_oauth_controller_settings($settings, $controller, $endpoint, $class, $name) {
+  $form = array();
+
+  $cc = $controller['endpoint']['services_oauth'];
+  $auth_levels = array();
+  foreach (oauth_common_authorization_levels($settings['context']) as $name => $level) {
+    $auth_levels[$name] = t($level->title);
+  }
+
+  $form['credentials'] = array(
+    '#type'          => 'select',
+    '#options'       => array(
+      'none'              => t('None'),
+      'unsigned_consumer' => t('Unsigned with consumer key'),
+      'consumer'          => t('Consumer key'),
+      'token'             => t('Consumer key and access token'),
+    ),
+    '#default_value' => !empty($cc['credentials']) ? $cc['credentials'] : 'token',
+    '#title'         => t('Required authentication'),
+    '#description'   => t('Authorization levels will <em>not</em> be applied if the consumer isn\'t required to supply a access token.'),
+  );
+
+  $form['authorization'] = array(
+    '#type'          => 'select',
+    '#options'       => $auth_levels,
+    '#default_value' => !empty($cc['authorization']) ? $cc['authorization'] : '*',
+    '#title'         => t('Required authorization'),
+  );
 
   return $form;
 }

@@ -50,14 +50,7 @@ function services_schema() {
         'not null'    => TRUE,
       ),
       'authentication' => array(
-        'description' => 'The authentication module used in this endpoint.',
-        'type'        => 'varchar',
-        'length'      => 32,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'authentication_settings' => array(
-        'description'    => 'The settings for the authentication module.',
+        'description'    => 'The authentication settings for the endpoint.',
         'type'           => 'text',
         'size'           => 'big',
         'not null'       => TRUE,
@@ -215,14 +208,7 @@ function services_update_6300() {
         'not null'    => TRUE,
       ),
       'authentication' => array(
-        'description' => 'The authentication module used in this endpoint.',
-        'type'        => 'varchar',
-        'length'      => 32,
-        'not null'    => TRUE,
-        'default'     => '',
-      ),
-      'authentication_settings' => array(
-        'description'    => 'The settings for the authentication module.',
+        'description' => 'The authentication modules used in this endpoint.',
         'type'           => 'text',
         'size'           => 'big',
         'not null'       => TRUE,

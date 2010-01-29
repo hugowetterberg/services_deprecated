@@ -111,8 +111,8 @@ function services_controller_execute($controller, $args = array(), $options = ar
     $endpoint_name = services_get_server_info('endpoint');
     $endpoint = services_endpoint_load($endpoint_name);
 
-    if (!empty($endpoint->authentication)) { // Only check authentication if there's a configured authentication module
-      if ($auth_error = services_auth_invoke($endpoint->authentication, 'authenticate_call', $controller, $args)) {
+    foreach ($endpoint->authentication as $auth_module => $settings) {
+      if ($auth_error = services_auth_invoke($auth_module, 'authenticate_call', $settings, $controller, $args)) {
         return services_error($auth_error, 401);
       }
     }
@@ -164,38 +164,19 @@ function services_controller_execute($controller, $args = array(), $options = ar
 
 /**
  * Gets information about a authentication module.
- * If a property name is passed the value of the property will be returned,
- * otherwise the whole information array will be returned.
  *
- * @param string $property
- *  Optional. The name of a single property to get. Defaults to null.
  * @param string $module
- *  Optional. The module to get info for. Defaults to the current authentication module.
+ *  The module to get info for.
  * @return mixed
- *  The information array or property value, or FALSE if the information or property wasn't found
+ *  The information array, or FALSE if the information wasn't found.
  */
-function services_auth_info($property = NULL, $module = NULL) {
-  static $info = array();
-  // Default the module param to the current auth module
-  // TODO: There is no longer a default auth module.
-  $module = $module ? $module : variable_get('services_auth_module', '');
-
-  if (!isset($info[$module])) {
-    if (!empty($module) && module_exists($module) && is_callable($module . '_authentication_info')) {
-      $info[$module] = call_user_func($module . '_authentication_info');
-    }
-    else {
-      $info[$module] = FALSE;
-    }
+function services_authentication_info($module) {
+  $info = FALSE;
+  error_log(var_export($module, TRUE));
+  if (!empty($module) && module_exists($module) && is_callable($module . '_services_authentication_info')) {
+    $info = call_user_func($module . '_services_authentication_info');
   }
-
-  // If a property was requested it should be returned
-  if ($property && $info[$module]) {
-    return isset($info[$module][$property]) ? $info[$module][$property] : FALSE;
-  }
-
-  // Return the info array
-  return $info[$module];
+  return $info;
 }
 
 /**
@@ -215,10 +196,11 @@ function services_auth_info($property = NULL, $module = NULL) {
  */
 function services_auth_invoke($module, $method, &$arg1 = NULL, &$arg2 = NULL, &$arg3 = NULL) {
   // Get information about the auth module
-  $func = services_auth_info($method, $module);
+  $info = services_authentication_info($module);
+  $func = $info && !empty($info[$method]) ? $info[$method] : FALSE;
   if ($func) {
-    if ($file = services_auth_info('#file', $module)) {
-      require_once(drupal_get_path('module', $module) . '/' . $file);
+    if (!empty($info['#file'])) {
+      require_once(drupal_get_path('module', $module) . '/' . $info['#file']);
     }
 
     if (is_callable($func)) {

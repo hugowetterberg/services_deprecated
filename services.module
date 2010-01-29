@@ -64,6 +64,13 @@ function services_menu() {
     'page arguments' => array(3),
     'type'           => MENU_LOCAL_TASK,
   ) + $base;
+  $items['admin/build/services/%services_endpoint/authentication'] = array(
+    'title'          => 'Authentication',
+    'page callback'  => 'services_edit_endpoint_authentication',
+    'page arguments' => array(3),
+    'type'           => MENU_LOCAL_TASK,
+    'weight'         => 5,
+  ) + $base;
   $items['admin/build/services/%services_endpoint/resources'] = array(
     'title'          => 'Resources',
     'page callback'  => 'services_edit_endpoint_resources',
@@ -139,19 +146,6 @@ function services_theme() {
       'arguments' => array('endpoints' => NULL),
     ),
   );
-}
-
-/**
- * Implementation of hook_bypass_secure_site().
- */
-function services_bypass_secure_site($path, $menu_item = NULL) {
-  $bypass = FALSE;
-  if ($menu_item && $menu_item['page_callback'] == 'services_server') {
-    $endpoint = services_endpoint_load($menu_item['page_arguments'][1]);
-    // Only bypass securesite if a authentication module is enabled.
-    $bypass = $endpoint && !empty($endpoint->authentication);
-  }
-  return $bypass;
 }
 
 /**

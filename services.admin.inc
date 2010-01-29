@@ -604,15 +604,17 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
     $c = isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
 
     $c['alias'] = $resource['alias'];
-    foreach ($resource['operations'] as $op => $def) {
-      $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
-      $cop = array_merge($cop, $def);
-      if ($cop['enabled']) {
-        $c['operations'][$op] = $cop;
-        $used = $used || TRUE;
-      }
-      else {
-        unset($c['operations'][$op]);
+    if (isset($resource['operations'])) {
+      foreach ($resource['operations'] as $op => $def) {
+        $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
+        $cop = array_merge($cop, $def);
+        if ($cop['enabled']) {
+          $c['operations'][$op] = $cop;
+          $used = $used || TRUE;
+        }
+        else {
+          unset($c['operations'][$op]);
+        }
       }
     }
 

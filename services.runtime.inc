@@ -140,7 +140,7 @@ function services_controller_execute($controller, $args = array(), $options = ar
     global $user;
     return services_error(t('Access denied for user !uid "@user"', array(
       '!uid'  => $user->uid,
-      '@user' => $user->name,
+      '@user' => isset($user->name) ? $user->name : 'anonymous',
     )), 401);
   }
 

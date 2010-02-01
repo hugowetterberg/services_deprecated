@@ -17,6 +17,8 @@
  *  The resource definitions.
  */
 function _services_build_resources($endpoint_name = '') {
+  module_load_include('resource_runtime.inc', 'services');
+
   // Get all installed resources
   $resources = module_invoke_all('services_resources');
   _services_strip_hashes($resources);
@@ -54,9 +56,9 @@ function _services_build_resources($endpoint_name = '') {
 
   // Do some endpoint-dependent processing
   if ($endpoint) {
-    // Let the authentication module alter our controllers
-    if (!empty($endpoint->authentication)) {
-      services_auth_invoke($endpoint->authentication, 'alter_controllers', $controllers, $endpoint);
+    // Let the authentication modules alter our controllers
+    foreach ($endpoint->authentication as $auth_module => $auth_settings) {
+      services_auth_invoke($auth_module, 'alter_controllers', $auth_settings, $controllers, $endpoint);
     }
 
     // Apply any aliases from endpoint

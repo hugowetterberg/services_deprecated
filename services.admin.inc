@@ -12,6 +12,9 @@
  * Output a list of endpoints.
  */
 function services_list_endpoint($js = NULL) {
+  // Loading runtime include as needed by services_auth_info().
+  module_load_include('runtime.inc', 'services');
+
   $header = array(
     array('data' => t('Title'),          'class' => 'services-endpoint-title'),
     array('data' => t('Path'),           'class' => 'services-endpoint-path'),
@@ -69,6 +72,13 @@ function services_list_endpoint($js = NULL) {
     if (!empty($endpoint->name)) {
       $row_class[] = 'services-endpoint-disabled';
     }
+
+    $auth_names = array();
+    foreach (array_keys($endpoint->authentication) as $module) {
+      $info = services_authentication_info($module);
+      $auth_names[] = $info['#title'];
+    }
+
     $rows[$endpoint->name] = array(
       'data' => array(
         'title' => array(
@@ -84,7 +94,7 @@ function services_list_endpoint($js = NULL) {
           'class' => array('services-endpoint-server'),
         ),
         'authentication' => array(
-          'data'  => check_plain($endpoint->authentication),
+          'data'  => check_plain(join($auth_names, ', ')),
           'class' => array('services-endpoint-authentication'),
         ),
         'storage' => array(
@@ -202,47 +212,32 @@ function services_edit_form_endpoint(&$form_state, $form_info) {
     '#required'      => TRUE,
   );
 
-  $auth_modules = module_implements('authentication_info');
-  $auth_options = array('' => t('Session'));
-  foreach ($auth_modules as $module) {
-    $info = services_auth_info(NULL, $module);
-    $auth_options[$module] = $info['#title'];
-  }
+  $auth_modules = module_implements('services_authentication_info');
 
-  //TODO: Link to a page describing the different authentication mechanisms?
-  $form['authentication'] = array(
-    '#type'          => 'select',
-    '#options'       => $auth_options,
-    '#default_value' => array($endpoint->authentication),
-    '#title'         => t('Authentication'),
-    '#description'   => t('Choose an authentication scheme should be used with your endpoint.'),
-    '#required'      => FALSE,
-    '#ahah'          => array(
-      'path'    => 'admin/config/services/services/ahah/security-options',
-      'wrapper' => 'security-module-options',
-      'method'  => 'replace',
-    ),
-  );
-
-  // Placeholder for the auth module options
-  // also used as wrapper for ahah.
-  $form['authentication_settings'] = array(
-    '#prefix' => '<div id="security-module-options">',
-    '#suffix' => '</div>',
-    '#endpoint_attribute' => TRUE,
-    'settings' => array(
-      '#value' => '<div class="description"></div>',
-    ),
-  );
-
-  // Get the configuration form for the authorization module
-  if (!empty($endpoint->authentication)) {
-    $settings = services_auth_invoke($endpoint->authentication, 'security_settings', $endpoint->authentication_settings);
-    if (is_array($settings)) {
-      foreach ($settings as $key => $field) {
-        $form['authentication_settings']['settings'][$endpoint->authentication . '_' . $key] = $field;
-      }
+  if (!empty($auth_modules)) {
+    $auth_options = array();
+    foreach ($auth_modules as $module) {
+      $info = services_authentication_info($module);
+      $auth_options[$module] = $info['#title'];
     }
+
+    $form['authentication'] = array(
+      '#type'          => 'checkboxes',
+      '#options'       => $auth_options,
+      '#default_value' => array_keys($endpoint->authentication),
+      '#title'         => t('Authentication'),
+      '#description'   => t('Choose which authentication schemes that should ' .
+        'be used with your endpoint. If no authentication method is selected ' .
+        'the standard Drupal session security is used.'),
+    );
+  }
+  else {
+    $form['authentication'] = array(
+      '#type'          => 'item',
+      '#title'         => t('Authentication'),
+      '#description'   => t('No authentication modules are installed, standard ' .
+        'Drupal session based security will be used.'),
+    );
   }
 
   $label = (empty($endpoint->eid) && $endpoint->export_type != EXPORT_IN_CODE) ? t('Save and proceed') : t('Save');
@@ -289,28 +284,31 @@ function services_edit_form_endpoint_submit($form, &$form_state) {
   $endpoint->title          = $form_state['values']['title'];
   $endpoint->server         = $form_state['values']['server'];
   $endpoint->path           = $form_state['values']['path'];
-  $endpoint->authentication = $form_state['values']['authentication'];
 
-  $auth_settings = array();
-  $auth_name_length = strlen($endpoint->authentication);
-  foreach ($form_state['values'] as $key => $value) {
-    if (substr($key, 0, $auth_name_length + 1) == $endpoint->authentication . '_') {
-      $auth_settings[substr($key, $auth_name_length +1)] = $value;
+  // Set the authentication modules, and preserve the settings for modules
+  // that already exist.
+  $auth = array();
+  foreach (array_keys($form_state['values']['authentication']) as $module) {
+    if (isset($endpoint->authentication[$module])) {
+      $auth[$module] = $endpoint->authentication[$module];
+    }
+    else {
+      $auth[$module] = array();
     }
   }
-  $endpoint->authentication_settings = $auth_settings;
+  $endpoint->authentication = $auth;
 
   if (empty($endpoint->eid)) {
     drupal_set_message(t('Your new endpoint %title has been saved.', array('%title' => $endpoint->title)));
     services_endpoint_save($endpoint);
     $form_state['values']['eid'] = $endpoint->eid;
+    $form_state['redirect'] = 'admin/build/services/' . $endpoint->name . '/authentication';
   }
   else {
     drupal_set_message(t('Your changes have been saved.'));
     services_endpoint_save($endpoint);
+    $form_state['redirect'] = 'admin/build/services';
   }
-
-  $form_state['redirect'] = 'admin/config/services/services';
 }
 
 /**
@@ -400,6 +398,84 @@ function services_disable_endpoint($endpoint) {
   ctools_export_set_status('services_endpoint', $endpoint->name, TRUE);
   drupal_goto();
 }
+
+/**
+ * Configure authentication for a endpoint.
+ */
+function services_edit_endpoint_authentication($endpoint) {
+  if (!is_object($endpoint)) {
+    $endpoint = services_endpoint_load($endpoint);
+  }
+  if ($endpoint && !empty($endpoint->title)) {
+    drupal_set_title(check_plain($endpoint->title));
+  }
+  return drupal_get_form('services_edit_form_endpoint_authentication', $endpoint);
+}
+
+/**
+ * Endpoint authentication configuration form.
+ */
+function services_edit_form_endpoint_authentication(&$form_state, $endpoint) {
+  // Loading runtime include as needed by services_authentication_info().
+  module_load_include('runtime.inc', 'services');
+
+  $form = array();
+  $auth_modules = module_implements('services_authentication_info');
+
+  $form['endpoint_object'] = array(
+    '#type'  => 'value',
+    '#value' => $endpoint,
+  );
+
+  if (empty($auth_modules)) {
+    $form['message'] = array(
+      '#type'          => 'item',
+      '#title'         => t('No installed authentication modules'),
+      '#description'   => t('No authentication modules are installed, standard ' .
+        'Drupal session based security will be used.'),
+    );
+  }
+  else if (empty($endpoint->authentication)) {
+    $form['message'] = array(
+      '#type'          => 'item',
+      '#title'         => t('No enabled authentication modules'),
+      '#value'   => t('No authentication modules are enabled, standard ' .
+        'Drupal session based security will be used.'),
+    );
+  }
+  else {
+    // Add configuration fieldsets for the authentication modules
+    foreach ($endpoint->authentication as $module => $settings) {
+      $info = services_authentication_info($module);
+      if ($info) {
+        $form[$module] = array(
+          '#type' => 'fieldset',
+          '#title' => $info['#title'],
+          '#tree' => TRUE,
+        ) + services_auth_invoke($module, 'security_settings', $settings);
+      }
+    }
+  }
+
+  $form['submit'] = array(
+    '#type'  => 'submit',
+    '#value' => 'Save',
+  );
+
+  return $form;
+}
+
+function services_edit_form_endpoint_authentication_submit($form, $form_state) {
+  $endpoint = $form_state['values']['endpoint_object'];
+
+  foreach (array_keys($endpoint->authentication) as $module) {
+    $endpoint->authentication[$module] = $form_state['values'][$module];
+  }
+
+  drupal_set_message(t('Your authentication options have been saved.'));
+  services_endpoint_save($endpoint);
+}
+
 /**
  * Add resources to an endpoint.
  */
@@ -548,15 +624,17 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
     $c = isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
 
     $c['alias'] = $resource['alias'];
-    foreach ($resource['operations'] as $op => $def) {
-      $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
-      $cop = array_merge($cop, $def);
-      if ($cop['enabled']) {
-        $c['operations'][$op] = $cop;
-        $used = $used || TRUE;
-      }
-      else {
-        unset($c['operations'][$op]);
+    if (isset($resource['operations'])) {
+      foreach ($resource['operations'] as $op => $def) {
+        $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
+        $cop = array_merge($cop, $def);
+        if ($cop['enabled']) {
+          $c['operations'][$op] = $cop;
+          $used = $used || TRUE;
+        }
+        else {
+          unset($c['operations'][$op]);
+        }
       }
     }
 
@@ -633,6 +711,8 @@ function get_resource_operation_info($resource, $class, $name = NULL) {
  *  and relationship.
  */
 function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name = NULL) {
+  module_load_include('runtime.inc', 'services');
+
   if ($rop = get_resource_operation_info($resource, $class, $name)) {
     $settings['enabled'] = array(
       '#type' => 'checkbox',
@@ -640,61 +720,30 @@ function _services_resource_operation_settings(&$settings, $endpoint, $resource,
       '#default_value' => !empty($rop['endpoint']) && $rop['endpoint']['enabled'],
     );
 
-    if (!empty($rop['endpoint']['preprocess'])) {
-      $res_set[$op]['preprocess'] = array(
+    if ($rop['endpoint']['preprocess']) {
+      $settings['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Preprocess function'),
         '#value' => $rop['endpoint']['preprocess'],
       );
     }
 
-    if (!empty($rop['endpoint']['postprocess'])) {
-      $res_set[$op]['preprocess'] = array(
+    if ($rop['endpoint']['postprocess']) {
+      $settings['preprocess'] = array(
         '#type' => 'item',
         '#title' => t('Postprocess function'),
         '#value' => $rop['endpoint']['Postprocess'],
       );
     }
 
+    // Let authentication modules add their configuration options
+    foreach ($endpoint->authentication as $auth_module => $auth_settings) {
+      $settings_form = services_auth_invoke($auth_module, 'controller_settings', $auth_settings, $rop, $endpoint, $class, $name);
+      if (!empty($settings_form)) {
+        $settings[$auth_module] = $settings_form;
+      }
+    }
+
     drupal_alter('services_resource_operation_settings', $settings, $endpoint, $resource, $class, $name);
   }
-}
-
-/**
- * Callback for the security configuration form ahah.
- */
-function _services_ahah_security_options() {
-  module_load_include('runtime.inc', 'services');
-
-  $cached_form_state = array();
-  $cached_form = form_get_cache($_POST['form_build_id'], $cached_form_state);
-
-  $settings = NULL;
-  if (!empty($_POST['authentication'])) {
-    $auth_settings = services_auth_invoke($_POST['authentication'], 'security_settings');
-    foreach ($auth_settings as $key => $field) {
-      $settings[$_POST['authentication'] . '_' . $key] = $field;
-    }
-  }
-
-  if (is_array($settings)) {
-    $cached_form['security']['options']['settings'] = $settings;
-  }
-  else {
-    unset($cached_form['security']['options']['settings']);
-  }
-
-  form_set_cache($_POST['form_build_id'], $cached_form, $cached_form_state);
-
-  $form_state = array('submitted' => FALSE);
-  $options = $cached_form['security']['options'];
-  unset($options['#prefix'], $options['#suffix']);
-  $options = form_builder('_services_ahah_security_options', $options, $form_state);
-  $output = drupal_render($options);
-
-  print drupal_to_js(array(
-    'status' => TRUE,
-    'data'   => $output ? $output : '',
-  ));
-  exit;
 }

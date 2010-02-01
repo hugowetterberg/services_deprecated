@@ -70,18 +70,14 @@ function services_menu() {
     'page arguments' => array(4),
     'type'           => MENU_LOCAL_TASK,
   ) + $base;
-<<<<<<< HEAD
-  $items['admin/config/services/services/%services_endpoint/resources'] = array(
-=======
-  $items['admin/build/services/%services_endpoint/authentication'] = array(
+  $items['admin/config/services/services/%services_endpoint/authentication'] = array(
     'title'          => 'Authentication',
     'page callback'  => 'services_edit_endpoint_authentication',
-    'page arguments' => array(3),
+    'page arguments' => array(4),
     'type'           => MENU_LOCAL_TASK,
     'weight'         => 5,
   ) + $base;
-  $items['admin/build/services/%services_endpoint/resources'] = array(
->>>>>>> multiple_auth
+  $items['admin/config/services/services/%services_endpoint/resources'] = array(
     'title'          => 'Resources',
     'page callback'  => 'services_edit_endpoint_resources',
     'page arguments' => array(4),

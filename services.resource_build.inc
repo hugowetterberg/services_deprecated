@@ -193,7 +193,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
   if (isset($resource['actions'])) {
     foreach ($resource['actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['update'])) {
+      if (isset($resource['update']['args'])) {
         $up = $resource['update'];
         unset($up['args']);
         $resource['actions'][$actname] = array_merge($up, $act);
@@ -205,7 +205,7 @@ function _services_process_resource($name, &$resource, &$controllers) {
   if (isset($resource['targeted actions'])) {
     foreach ($resource['targeted actions'] as $actname => $act) {
       // Run some inheritance logic
-      if (isset($resource['update'])) {
+      if (isset($resource['update']['args'])) {
         if (empty($act['args']) || $act['args'][0]['name'] !== $resource['update']['args'][0]['name']) {
           array_unshift($act['args'], $resource['update']['args'][0]);
         }

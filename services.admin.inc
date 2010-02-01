@@ -30,46 +30,46 @@ function services_list_endpoint($js = NULL) {
     if (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Edit'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/edit',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/edit',
       );
       $operations[] = array(
         'title' => t('Export'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/export',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/export',
       );
     }
 
     if ($endpoint->export_type == (EXPORT_IN_CODE | EXPORT_IN_DATABASE)) {
       $operations[] = array(
         'title' => t('Revert'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/delete',
       );
     }
     elseif ($endpoint->export_type != EXPORT_IN_CODE) {
       $operations[] = array(
         'title' => t('Delete'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/delete',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/delete',
       );
     }
     elseif (empty($endpoint->disabled)) {
       $operations[] = array(
         'title' => t('Disable'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/disable',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/disable',
         'query' => drupal_get_destination(),
       );
     }
     else {
       $operations[] = array(
         'title' => t('Enable'),
-        'href'  => 'admin/config/services/services/' . $endpoint->endpoint . '/enable',
+        'href'  => 'admin/config/services/services/' . $endpoint->name . '/enable',
         'query' => drupal_get_destination(),
       );
     }
 
-    $row_class = array('services-endpoint-' . $endpoint->endpoint);
-    if (!empty($endpoint->disabled)) {
+    $row_class = array('services-endpoint-' . $endpoint->name);
+    if (!empty($endpoint->name)) {
       $row_class[] = 'services-endpoint-disabled';
     }
-    $rows[$endpoint->endpoint] = array(
+    $rows[$endpoint->name] = array(
       'data' => array(
         'title' => array(
           'data'  => $endpoint->title,
@@ -158,11 +158,11 @@ function services_edit_form_endpoint(&$form_state, $form_info) {
     '#value' => $endpoint,
   );
 
-  $form['endpoint'] = array(
+  $form['name'] = array(
     '#type'          => 'textfield',
     '#size'          => 24,
     '#maxlength'     => 255,
-    '#default_value' => $endpoint->endpoint,
+    '#default_value' => $endpoint->name,
     '#title'         => t('Endpoint name'),
     '#description'   => t('A unique name used to identify this preset internally. It must be only be alpha characters and underscores. No spaces, numbers or uppercase characters.'),
     '#required'      => TRUE,
@@ -265,7 +265,7 @@ function services_edit_form_endpoint_validate($form, &$form_state) {
   else {
     $query = db_select('services_endpoint', 'e');
     $query->addField('e', 'eid');
-    $query->condition('endpoint', $form_state['values']['endpoint']);
+    $query->condition('name', $form_state['values']['name']);
 
     if (!empty($form_state['values']['eid']) && is_numeric($form_state['values']['eid'])) {
       $query->condition('eid', $form_state['values']['eid'], '!=');
@@ -273,7 +273,7 @@ function services_edit_form_endpoint_validate($form, &$form_state) {
 
     $res = $query->execute()->fetchField();
     if (!empty($res)) {
-      form_error($form['endpoint'], t('Endpoint name must be unique.'));
+      form_error($form['name'], t('Endpoint name must be unique.'));
     }
   }
   //TODO: More validation? Eg. validate path? Transliteration etc?
@@ -285,7 +285,7 @@ function services_edit_form_endpoint_validate($form, &$form_state) {
 function services_edit_form_endpoint_submit($form, &$form_state) {
   $endpoint = $form_state['values']['endpoint_object'];
 
-  $endpoint->endpoint       = $form_state['values']['endpoint'];
+  $endpoint->name           = $form_state['values']['name'];
   $endpoint->title          = $form_state['values']['title'];
   $endpoint->server         = $form_state['values']['server'];
   $endpoint->path           = $form_state['values']['path'];
@@ -356,7 +356,7 @@ function services_delete_confirm_endpoint(&$form_state, $form_info) {
     drupal_not_found();
     die;
   }
-  $form['endpoint'] = array('#type' => 'value', '#value' => $endpoint->endpoint);
+  $form['endpoint'] = array('#type' => 'value', '#value' => $endpoint->name);
   $form['eid']      = array('#type' => 'value', '#value' => $endpoint->eid);
   return confirm_form($form,
     $title,
@@ -385,7 +385,7 @@ function services_enable_endpoint($endpoint) {
     $endpoint = services_endpoint_load($endpoint);
   }
   ctools_include('export');
-  ctools_export_set_status('services_endpoint', $endpoint->endpoint, FALSE);
+  ctools_export_set_status('services_endpoint', $endpoint->name, FALSE);
   drupal_goto();
 }
 
@@ -397,7 +397,7 @@ function services_disable_endpoint($endpoint) {
     $endpoint = services_endpoint_load($endpoint);
   }
   ctools_include('export');
-  ctools_export_set_status('services_endpoint', $endpoint->endpoint, TRUE);
+  ctools_export_set_status('services_endpoint', $endpoint->name, TRUE);
   drupal_goto();
 }
 /**
@@ -544,13 +544,20 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
   $endpoint  = $form_state['values']['endpoint_object'];
 
   foreach ($resources as $name => $resource) {
+    $used = FALSE;
     $c = isset($endpoint->resources[$name]) ? $endpoint->resources[$name] : array();
 
     $c['alias'] = $resource['alias'];
     foreach ($resource['operations'] as $op => $def) {
       $cop = isset($c['operations'][$op]) ? $c['operations'][$op] : array();
       $cop = array_merge($cop, $def);
-      $c['operations'][$op] = $cop;
+      if ($cop['enabled']) {
+        $c['operations'][$op] = $cop;
+        $used = $used || TRUE;
+      }
+      else {
+        unset($c['operations'][$op]);
+      }
     }
 
     $classes = array(
@@ -559,16 +566,32 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
       'relationships' => 'relationships',
     );
     foreach ($classes as $element => $class) {
+      $class_used = FALSE;
       if (!empty($resource[$element])) {
         foreach ($resource[$element] as $act => $def) {
           $cop = isset($c[$class][$act]) ? $c[$class][$act] : array();
           $cop = array_merge($cop, $def);
-          $c[$class][$act] = $cop;
+          if ($cop['enabled']) {
+            $c[$class][$act] = $cop;
+            $class_used = $class_used || TRUE;
+          }
+          else {
+            unset($c[$class][$act]);
+          }
         }
+        if (!$class_used) {
+          unset($c[$class]);
+        }
+        $used = $class_used || $used;
       }
     }
 
-    $endpoint->resources[$name] = $c;
+    if ($used) {
+      $endpoint->resources[$name] = $c;
+    }
+    else {
+      unset($endpoint->resources[$name]);
+    }
   }
 
   drupal_set_message(t('Your resources have been saved.'));

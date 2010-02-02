@@ -172,7 +172,6 @@ function services_controller_execute($controller, $args = array(), $options = ar
  */
 function services_authentication_info($module) {
   $info = FALSE;
-  error_log(var_export($module, TRUE));
   if (!empty($module) && module_exists($module) && is_callable($module . '_services_authentication_info')) {
     $info = call_user_func($module . '_services_authentication_info');
   }

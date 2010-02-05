@@ -37,3 +37,10 @@ function services_oauth_update_6001() {
 
   return $ret;
 }
+
+function services_oauth_update_6200() {
+  variable_del('services_oauth_authentication_levels_');
+  variable_del('services_oauth_authorization_settings_');
+
+  return array();
+}

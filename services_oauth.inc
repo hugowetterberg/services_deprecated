@@ -34,7 +34,7 @@ function _services_oauth_authenticate_call($settings, $method, $args) {
     if ($consumer == NULL) {
       throw new OAuthException('Missing consumer token');
     }
-    if ($consumer->context !== $settings['context']) {
+    if ($consumer->context !== $settings['oauth_context']) {
       throw new OAuthException('The consumer is not valid in the current context');
     }
 
@@ -71,18 +71,18 @@ function _services_oauth_authenticate_call($settings, $method, $args) {
 
 function _services_oauth_security_settings($settings) {
   $form = array();
-  $form['context'] = array(
+  $form['oauth_context'] = array(
     '#type'          => 'select',
     '#options'       => array('' => t('-- Select an OAuth context')),
-    '#default_value' => isset($settings['context']) ? $settings['context'] : '',
+    '#default_value' => isset($settings['oauth_context']) ? $settings['oauth_context'] : '',
     '#title'         => t('OAuth context'),
     '#required'      => TRUE,
     '#description'   => t('The OAuth contexts provides a scope for consumers and authorizations and have their own authorization levels. Different services endpoints may share OAuth contexts and thereby allow the use of consumers and tokens across the services endpoint boundraries.'),
   );
 
-  $contexts = oauth_common_authorization_contexts();
-  foreach ($contexts as $name => $levels) {
-    $form['context']['#options'][$name] = $name;
+  $contexts = oauth_common_context_load_all();
+  foreach ($contexts as $context) {
+    $form['oauth_context']['#options'][$context->name] = $context->title;
   }
 
   return $form;
@@ -93,8 +93,9 @@ function _services_oauth_controller_settings($settings, $controller, $endpoint, 
 
   $cc = $controller['endpoint']['services_oauth'];
   $auth_levels = array();
-  foreach (oauth_common_authorization_levels($settings['context']) as $name => $level) {
-    $auth_levels[$name] = t($level->title);
+  $context = oauth_common_context_load($settings['oauth_context']);
+  foreach ($context->authorization_levels as $name => $level) {
+    $auth_levels[$name] = t($level['title']);
   }
 
   $form['credentials'] = array(

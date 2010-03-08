@@ -1,5 +1,5 @@
 <?php
-// $Id: node_resource.inc,v 1.1.2.1 2009/09/05 13:57:58 marcingy Exp $
+// $Id: node_resource.inc,v 1.2 2010/03/08 20:26:08 hugowetterberg Exp $
 
 function _node_resource_retrieve($nid) {
   $node = node_load($nid);

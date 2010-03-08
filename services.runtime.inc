@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: services.runtime.inc,v 1.2 2010/03/08 20:26:08 hugowetterberg Exp $
 
 /**
  * @file

@@ -1,4 +1,4 @@
-// $Id: README.txt,v 1.8.2.1 2008/09/06 04:13:07 marcingy Exp $
+// $Id: README.txt,v 1.11 2010/03/08 20:01:41 hugowetterberg Exp $
 
 Goals
 ==============

@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: services.admin.inc,v 1.2 2010/03/08 20:01:41 hugowetterberg Exp $
 
 /**
  * @file

@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: services.resource_build.inc,v 1.1 2010/03/08 20:01:41 hugowetterberg Exp $
 
 /**
  * @file

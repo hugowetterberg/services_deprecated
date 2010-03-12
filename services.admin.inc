@@ -1,5 +1,5 @@
 <?php
-// $Id: services.admin.inc,v 1.2 2010/03/08 20:01:41 hugowetterberg Exp $
+// $Id: services.admin.inc,v 1.2.2.1 2010/03/12 10:36:19 hugowetterberg Exp $
 
 /**
  * @file

@@ -1,0 +1,6 @@
+; $Id: 
+name = User Resource
+description = Provides a resource oriented service interface to users.
+package = Services - services
+core = 6.x
+php = 5.x

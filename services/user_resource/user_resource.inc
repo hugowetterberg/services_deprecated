@@ -11,6 +11,15 @@ function _user_resource_retrieve($uid) {
   return $account;
 }
 
+/**
+ * Requires an account object with the following properties:
+ *
+ * $account = array(
+ *   'name' => 'test_user',
+ *   'pass' => 'xyzzy',
+ *   'mail' => 'test_user@heyrocker.com',
+ * );
+ */
 function _user_resource_create($account) {
   // Load the required includes for saving profile information
   // with drupal_execute().
@@ -22,15 +31,15 @@ function _user_resource_create($account) {
   // this checkbox on the user create and edit form (and thus
   // causes problems with drupal_execute()). Therefore we just
   // force it to 0 here.
-  if (isset($account['roles'][2])) {
-    $account['roles'][2] = 0;
+  if (isset($account->roles[2])) {
+    $account->roles[2] = 0;
   }
 
   // register a new user
   $form_state['values'] = $account;
   $form_state['values']['pass'] = array(
-    'pass1' => $account['pass'],
-    'pass2' => $account['pass'],
+    'pass1' => $account->pass,
+    'pass2' => $account->pass,
   );
   $form_state['values']['op'] = t('Create new account');
   

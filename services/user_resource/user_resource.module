@@ -11,7 +11,7 @@ function user_resource_services_resources() {
       'retrieve' => array(
         'help' => 'Retrieves a user',
         'callback' => '_user_resource_retrieve',
-        'access arguments' => array('access content'), // this is probably not enough
+        'access arguments' => array('access user profiles'), // this is probably not enough, doesn't block things like pass and email
         'access arguments append' => TRUE,
         'args' => array(
           array(
@@ -30,7 +30,7 @@ function user_resource_services_resources() {
        'access arguments append' => TRUE  ,
        'args' => array(
          array(
-           'name' => 'data',
+           'name' => 'account',
            'type' => 'struct',
            'description' => 'The user object',
            'source' => 'data',

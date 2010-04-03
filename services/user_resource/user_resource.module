@@ -42,7 +42,6 @@ function user_resource_services_resources() {
        'help' => 'Updates a user',
        'callback' => '_user_resource_update',
        'access callback' => '_user_resource_update_access',
-       'access arguments' => array($args),
        'access arguments append' => TRUE,
        'args' => array(
          array(
@@ -55,7 +54,7 @@ function user_resource_services_resources() {
        ),
      ),
      'delete' => array(
-       'help' => 'Deletes a note',
+       'help' => 'Deletes a user',
        'callback' => '_user_resource_delete',
        'access arguments' => array('administer users'),
        'access arguments append' => TRUE,
@@ -66,6 +65,36 @@ function user_resource_services_resources() {
            'description' => 'The id of the note to delete',
            'source' => array('path' => '0'),
            'optional' => FALSE,
+         ),
+       ),
+     ),
+
+     'login' => array(
+       'help' => 'Login a user for a new session',
+       'callback' => '_user_resource_login',
+       'args' => array(
+         array(
+           'name' => 'username',
+           'type' => 'string',
+           'description' => 'A valid username',
+           'source' => array('data'),
+           'optional' => FALSE,
+         ),
+         array(
+           'name' => 'password',
+           'type' => 'string',
+           'description' => 'A valid password',
+           'source' => array('data'),
+           'optional' => FALSE,
+         ),
+       ),
+     ),
+
+     'logout' => array(
+       'help' => 'Logout a user session',
+       'callback' => '_user_resource_logout',
+       'args' => array(
+         array(
          ),
        ),
      ),

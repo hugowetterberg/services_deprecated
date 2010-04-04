@@ -161,7 +161,7 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
     '#maxlength'     => 255,
     '#default_value' => $endpoint->name,
     '#title'         => t('Endpoint name'),
-    '#description'   => t('A unique name used to identify this preset internally. It must be only be alpha characters and underscores. No spaces, numbers or uppercase characters.'),
+    '#description'   => t('A unique name used to identify this preset internally. It may only contain lowercase alpha characters and underscores. No spaces, numbers or uppercase characters.'),
     '#required'      => TRUE,
   );
 
@@ -241,8 +241,8 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
  */
 function services_edit_form_endpoint_validate($form, &$form_state) {
   // Test uniqueness of name:
-  if (preg_match("/[^A-Za-z0-9_]/", $form_state['values']['endpoint'])) {
-    form_error($form['name'], t('Endpoint name must be alphanumeric or underscores only.'));
+  if (preg_match("/[^a-z_]/", $form_state['values']['name'])) {
+    form_error($form['name'], t('Endpoint name may only contain lowercase alpha characters and underscores.'));
   }
   else {
     $query = "SELECT eid FROM {services_endpoint} WHERE name = '%s'";

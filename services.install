@@ -75,18 +75,11 @@ function services_schema() {
   return $schema;
 }
 
-/**
- * Implementation of hook_install().
- */
-function services_install() {
-  drupal_install_schema('services');
-}
 
 /**
  * Implementation of hook_uninstall().
  */
 function services_uninstall() {
-  drupal_uninstall_schema('services');
   $ret = array();
 
   // Drop legacy tables

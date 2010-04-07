@@ -1,5 +1,5 @@
 <?php
-// $Id$
+// $Id: services.admin.inc,v 1.2.2.1 2010/03/12 10:36:19 hugowetterberg Exp $
 
 /**
  * @file
@@ -665,7 +665,7 @@ function services_edit_form_endpoint_resources_submit($form, $form_state) {
  *  Information about the operation, or NULL if no matching
  *  operation was found.
  */
-function get_resource_operation_info($resource, $class, $name = NULL) {
+function services_get_resource_operation_info($resource, $class, $name = NULL) {
   $op = NULL;
 
   if (isset($resource[$class])) {
@@ -695,7 +695,9 @@ function get_resource_operation_info($resource, $class, $name = NULL) {
 function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name = NULL) {
   module_load_include('runtime.inc', 'services');
 
-  if ($rop = get_resource_operation_info($resource, $class, $name)) {
+  print_r($resource);
+
+  if ($rop = services_get_resource_operation_info($resource, $class, $name)) {
     $settings['enabled'] = array(
       '#type' => 'checkbox',
       '#title' => t('Enabled'),

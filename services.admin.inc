@@ -71,7 +71,7 @@ function services_list_endpoint($js = NULL) {
     $auth_names = array();
     foreach (array_keys($endpoint->authentication) as $module) {
       $info = services_authentication_info($module);
-      $auth_names[] = $info['#title'];
+      $auth_names[] = $info['title'];
     }
 
     $rows[$endpoint->name] = array(
@@ -433,7 +433,7 @@ function services_edit_form_endpoint_authentication(&$form_state, $endpoint) {
       if ($info) {
         $form[$module] = array(
           '#type' => 'fieldset',
-          '#title' => $info['#title'],
+          '#title' => $info['title'],
           '#tree' => TRUE,
         ) + services_auth_invoke($module, 'security_settings', $settings);
       }
@@ -694,8 +694,6 @@ function services_get_resource_operation_info($resource, $class, $name = NULL) {
  */
 function _services_resource_operation_settings(&$settings, $endpoint, $resource, $class, $name = NULL) {
   module_load_include('runtime.inc', 'services');
-
-  print_r($resource);
 
   if ($rop = services_get_resource_operation_info($resource, $class, $name)) {
     $settings['enabled'] = array(

@@ -4,11 +4,10 @@
 function system_resource_services_resources() {
   return array(
     'system' => array(
-      'file' => array('type' => 'inc', 'module' => 'system_resource'),
       'actions' => array(
         'connect' => array(
+          'file' => array('type' => 'inc', 'module' => 'system_resource'),
           'callback' => '_system_resource_connect',
-          'args' => array(),
         ),
       ),
     ),

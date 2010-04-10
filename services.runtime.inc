@@ -95,7 +95,6 @@ class ServicesArgumentException extends ServicesException {
  */
 function services_controller_execute($controller, $args = array(), $options = array()) {
   // Check for missing arguments.
-  $hash_parameters = array();
   foreach ($controller['args'] as $key => $arg) {
     if (!$arg['optional']) {
       if (!isset($args[$key]) && !is_array($args[$key]) && !is_bool($args[$key])) {

@@ -21,7 +21,6 @@ function _services_build_resources($endpoint_name = '') {
 
   // Get all installed resources
   $resources = module_invoke_all('services_resources');
-  _services_strip_hashes($resources);
 
   // Load the endpoint
   $endpoint = NULL;
@@ -77,25 +76,6 @@ function _services_build_resources($endpoint_name = '') {
   }
 
   return $resources;
-}
-
-/**
- * Cleanup function to remove unnecessary hashes from service definitions.
- *
- * @param array $array
- *  The service definitions array.
- * @return array
- */
-function _services_strip_hashes(&$array) {
-  foreach ($array as $key => $value) {
-    if (is_array($value)) {
-      _services_strip_hashes($array[$key]);
-    }
-    if (strpos($key, '#') === 0) {
-      $array[substr($key, 1)] = $array[$key];
-      unset($array[$key]);
-    }
-  }
 }
 
 /**
@@ -223,7 +203,6 @@ function _services_process_resource($name, &$resource, &$controllers) {
  */
 function _services_legacy_services_as_resources() {
   $services = $methods = module_invoke_all('service');
-  _services_strip_hashes($methods);
   $resources = array();
 
   foreach ($services as $service) {

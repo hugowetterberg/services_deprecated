@@ -212,8 +212,8 @@ function services_auth_invoke($module, $method, &$arg1 = NULL, &$arg2 = NULL, &$
   $info = services_authentication_info($module);
   $func = $info && !empty($info[$method]) ? $info[$method] : FALSE;
   if ($func) {
-    if (!empty($info['#file'])) {
-      require_once(drupal_get_path('module', $module) . '/' . $info['#file']);
+    if (!empty($info['file'])) {
+      require_once(drupal_get_path('module', $module) . '/' . $info['file']);
     }
 
     if (is_callable($func)) {

@@ -179,7 +179,7 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
     '' => t('-- Select a server'),
   );
   foreach ($servers as $server => $info) {
-    $server_opts[$server] = $info['name'];
+    $server_opts[$server] = $info['#name'];
   }
   $form['server'] = array(
     '#type'          => 'select',
@@ -436,7 +436,7 @@ function services_edit_form_endpoint_authentication(&$form_state, $endpoint) {
           '#title' => $info['title'],
           '#tree' => TRUE,
         ) + services_auth_invoke($module, 'security_settings', $settings);
-      }
+      } 
     }
   }
 
@@ -590,7 +590,7 @@ function services_edit_form_endpoint_resources_validate($form, $form_state) {
     if (!empty($resource['alias'])) {
       if (!preg_match('/^[a-z-]+$/', $resource['alias'])) {
         form_set_error("resources][{$name}][alias", t("The alias for the !name may only contain lower case a-z and dashes.", array(
-          '!name' => $form['resources'][$name]['title'],
+          '!name' => $form['resources'][$name]['#title'],
         )));
       }
     }

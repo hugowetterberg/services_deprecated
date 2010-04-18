@@ -1,0 +1,9 @@
+; $Id:
+name = Comment Resource
+description = Provides a comment resource.
+package = Services - services
+dependencies[] = services
+dependencies[] = comment
+dependencies[] = node_resource
+core = 6.x
+

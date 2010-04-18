@@ -1,0 +1,138 @@
+<?php
+// $Id:
+
+/**
+ * Implementation of hook_services_resources().
+ *
+ * THERE SHOULD BE NO UPDATE!!!
+ * Drupal doesn't allow updating or replacing a file in the files table.
+ * If you need to, create a new file and remove the old file.
+ */
+function file_resource_services_resources() {
+  return array(
+    'file' => array(
+
+      'file' => array('type' => 'inc', 'module' => 'file_resource'),
+
+      'create' => array(
+        'help' => 'Creates a file',
+        'callback' => '_file_resource_create',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('create'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'file',
+            'type' => 'struct',
+            'description'    => t('An object representing a file.'),
+            'source' => 'data',
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'retrieve' => array(
+        'help' => 'Retrieves a file',
+        'callback' => '_file_resource_retrieve',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'fid',
+            'type' => 'int',
+            'description' => 'The fid of the file to retrieve.',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'delete' => array(
+        'help' => 'Deletes a file',
+        'callback' => '_file_resource_delete',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('delete'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'cid',
+            'type' => 'int',
+            'description' => 'The id of the file to delete',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+      'actions' => array(
+        'nodeFiles' => array(
+          'help'   => t('This method returns the files on a given node.'),
+          'access callback' => '_file_resource_node_access',
+          'access arguments' => array('view'),
+          'access arguments append' => TRUE,
+          'callback' => '_file_resource_load_node_files',
+          'args'     => array(
+            array(
+              'name'         => 'nid',
+              'type'         => 'int',
+              'description'  => t('The node id to load files for.'),
+              'source'       => array('path' => '0'),
+              'optional'     => FALSE,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+/**
+* Access check callback for file controllers.
+*/
+function _file_resource_access($op = 'view', $args = array()) {
+  global $user;
+  if (user_access('administer files')) {
+    return TRUE;
+  }
+
+  if ($op=='create') {
+    $file = (object)$args[0];
+  }
+  else {
+    $file = db_fetch_array(db_query('SELECT * FROM {files} WHERE fid = %d', $args[0]));
+  }
+
+  switch ($op) {
+    case 'view':
+      if (user_access('get any binary files')) {
+        return TRUE;
+      }
+      return $file['uid'] == $user->uid && user_access('get own binary files');
+      break;
+    case 'create':
+    case 'delete':
+      return $file['uid'] == $user->uid && user_access('save file information');
+      break;
+  }
+
+  return FALSE;
+}
+
+function _file_resource_node_access($op = 'view', $args = array()) {
+  global $user;
+  if (user_access('get any binary files')) {
+    return TRUE;
+  }
+  elseif ($node = node_load($args[0])) {
+    return $node->uid == $user->uid && user_access('get own binary files');
+  }
+  
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_perm().
+ */
+function file_service_perm() {
+  return array('get any binary files', 'get own binary files', 'save file information');
+}

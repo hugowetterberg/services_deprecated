@@ -1,0 +1,7 @@
+; $Id:
+name = File Resource
+description = Provides a file resource.
+package = Services - services
+dependencies[] = services
+core = 6.x
+

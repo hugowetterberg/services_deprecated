@@ -179,7 +179,7 @@ function services_edit_form_endpoint(&$form_state, $endpoint) {
     '' => t('-- Select a server'),
   );
   foreach ($servers as $server => $info) {
-    $server_opts[$server] = $info['#name'];
+    $server_opts[$server] = $info['name'];
   }
   $form['server'] = array(
     '#type'          => 'select',

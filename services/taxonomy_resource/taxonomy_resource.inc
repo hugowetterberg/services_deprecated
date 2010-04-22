@@ -22,10 +22,10 @@ function _taxonomy_term_resource_retrieve($tid = NULL){
  *
  */
 function _taxonomy_term_resource_create($term=NULL){
-    if (!is_array($term)) {
-      $term = (array) $term;
-    }
-    return taxonomy_save_term($term);
+  if (!is_array($term)) {
+    $term = (array) $term;
+  }
+  return taxonomy_save_term($term);
 }
 
 /**

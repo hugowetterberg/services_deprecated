@@ -77,66 +77,66 @@ function taxonomy_resource_services_resources() {
       ),
       // TODO: term specific actions need to be implemented (see: taxonomy_service_get_tree / taxonomy_service_select_nodes)
     ),
-  'taxonomy_vocabulary' => array(
-    'file' => array('type' => 'inc', 'module' => 'taxonomy_resource'),
-    'retrieve' => array(
-      'callback' => '_taxonomy_vocabulary_resource_retrieve',
-      'args' => array(
-        array(
-          'name' => 'vid',
-          'optional' => FALSE,
-          'source' => array('path' => 0),
-          'type' => 'int',
-          'description' => 'The vid of the taxonomy vocabulary to get',
+    'taxonomy_vocabulary' => array(
+      'file' => array('type' => 'inc', 'module' => 'taxonomy_resource'),
+      'retrieve' => array(
+        'callback' => '_taxonomy_vocabulary_resource_retrieve',
+        'args' => array(
+          array(
+            'name' => 'vid',
+            'optional' => FALSE,
+            'source' => array('path' => 0),
+            'type' => 'int',
+            'description' => 'The vid of the taxonomy vocabulary to get',
+          ),
         ),
+        'access callback' => '_taxonomy_resource_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
       ),
-      'access callback' => '_taxonomy_resource_access',
-      'access arguments' => array('view'),
-      'access arguments append' => TRUE,
-    ),
-    'create' => array(
-      'callback' => '_taxonomy_vocabulary_resource_create',
-      'args' => array(
-        array(
-          'name' => 'vocabulary',
-          'optional' => FALSE,
-          'source' => 'data',
-          'description' => 'The taxonomy vocabulary object to create',
-          'type' => 'struct',
+      'create' => array(
+        'callback' => '_taxonomy_vocabulary_resource_create',
+        'args' => array(
+          array(
+            'name' => 'vocabulary',
+            'optional' => FALSE,
+            'source' => 'data',
+            'description' => 'The taxonomy vocabulary object to create',
+            'type' => 'struct',
+          ),
         ),
+        'access callback' => '_taxonomy_resource_access',
+        'access arguments' => array('create'),
+        'access arguments append' => TRUE,
       ),
-      'access callback' => '_taxonomy_resource_access',
-      'access arguments' => array('create'),
-      'access arguments append' => TRUE,
-    ),
-    'update' => array(
-      'callback' => '_taxonomy_vocabulary_resource_update',
-      'args' => array(
-        array(
-          'name' => 'vocabulary',
-          'optional' => FALSE,
-          'source' => 'data',
-          'description' => 'The taxonomy vocabulary data to update',
-          'type' => 'struct',
+      'update' => array(
+        'callback' => '_taxonomy_vocabulary_resource_update',
+        'args' => array(
+          array(
+            'name' => 'vocabulary',
+            'optional' => FALSE,
+            'source' => 'data',
+            'description' => 'The taxonomy vocabulary data to update',
+            'type' => 'struct',
+          ),
         ),
+        'access callback' => '_taxonomy_resource_access',
+        'access arguments' => array('update'),
+        'access arguments append' => TRUE,
       ),
-      'access callback' => '_taxonomy_resource_access',
-      'access arguments' => array('update'),
-      'access arguments append' => TRUE,
-    ),
-    'delete' => array(
-      'callback' => '_taxonomy_vocabulary_resource_delete',
-      'args' => array(
-        array(
-          'name' => 'vid',
-          'optional' => FALSE,
-          'source' => array('path' => 0),
+      'delete' => array(
+        'callback' => '_taxonomy_vocabulary_resource_delete',
+        'args' => array(
+          array(
+            'name' => 'vid',
+            'optional' => FALSE,
+            'source' => array('path' => 0),
+          ),
         ),
+        'access callback' => '_taxonomy_resource_access',
+        'access arguments' => array('delete'),
+        'access arguments append' => TRUE,
       ),
-      'access callback' => '_taxonomy_resource_access',
-      'access arguments' => array('delete'),
-      'access arguments append' => TRUE,
     ),
-  ),
   );
 }

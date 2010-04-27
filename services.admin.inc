@@ -537,7 +537,7 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
           '#type'        => 'fieldset',
           '#title'       => $title,
           '#collapsible' => TRUE,
-          '#collapsed'   => TRUE,
+          '#collapsed'   => FALSE,
         );
         _services_resource_operation_settings($res_set['operations'][$op], $endpoint, $resource, $op);
       }
@@ -560,7 +560,7 @@ function services_edit_form_endpoint_resources(&$form_state, $endpoint) {
             '#type'        => 'fieldset',
             '#title'       => $action,
             '#collapsible' => TRUE,
-            '#collapsed'   => TRUE,
+            '#collapsed'   => FALSE,
           );
           _services_resource_operation_settings($res_set[$element][$action], $endpoint, $resource, $class, $action);
         }

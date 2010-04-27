@@ -22,15 +22,12 @@ function _services_sessauth_alter_methods(&$methods) {
   foreach ($methods as $key => &$method) {
     // set method defaults
     switch ($method['method']) {
-      case 'system.connect':
-      case 'search.nodes':
-      case 'search.content':
       case 'search.users':
         $method['auth'] = FALSE;
         break;
       default:
         $method['auth'] = TRUE;
-        array_unshift($method['args'], $arg_sessid);
+        array_push($method['args'], $arg_sessid);
     }
   }
 }
@@ -39,11 +36,11 @@ function _services_sessauth_authenticate_call($method, $method_name, &$args) {
   // Add additonal processing for methods requiring session
   $session_backup = NULL;
   if ($method['auth']) {
-    $sessid = array_shift($args);
+    $sessid = array_pop($args);
     if (empty($sessid)) {
       return t('Invalid sessid.');
     }
-    $session_backup = services_session_load($sessid);
+    $session_backup = services_session_load($sessid['sessid']);
   }
 }
 

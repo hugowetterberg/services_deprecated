@@ -34,6 +34,14 @@ function _user_resource_retrieve($uid) {
  *     - name (user name)
  *     - mail (email address)
  *     - pass (plain text unencrypted password)
+ *
+ *   These properties can be passed but are optional
+ *     - status (0 for blocked, otherwise will be active by default)
+ *     - notify (1 to notify user of new account, will not notify by default)
+ *
+ *  Roles can be passed in a roles property which is an associative
+ *  array formatted with '<role id>' => '<role id>', not including
+ *  the authenticated user role, which is given by default. 
  *  
  * @return
  *   The user object of the newly created user.

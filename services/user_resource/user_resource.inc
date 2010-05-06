@@ -29,9 +29,12 @@ function _user_resource_retrieve($uid) {
  * the submitting form in question.
  *
  * @param $account
- *   A object containing account information. The object must at minimum
- *   contain username, password and email address.
- *
+ *   A object containing account information. The $account object should 
+ *   contain, at minimum, the following properties:
+ *     - name (user name)
+ *     - mail (email address)
+ *     - pass (plain text unencrypted password)
+ *  
  * @return
  *   The user object of the newly created user.
  */

@@ -67,6 +67,9 @@ class RESTServer {
     $data = array();
     $arguments = $this->getControllerArguments($controller, $path, $method, $data);
 
+    // Any authentication needed for REST Server must be set in the cookies
+    $auth_arguments = $_COOKIE;
+    
     $formats = $this->responseFormatters();
 
     // Negotiate response format based on accept-headers if we
@@ -87,7 +90,7 @@ class RESTServer {
       }
 
       // Get the best matching format, default to json
-      if ($_SERVER['HTTP_ACCEPT']) {
+      if (isset($_SERVER['HTTP_ACCEPT'])) {
         $mime = new Mimeparse();
         $mime_type = $mime->best_match($mime_candidates, $_SERVER['HTTP_ACCEPT']);
       }
@@ -137,7 +140,7 @@ class RESTServer {
       }
     }
 
-    $result = services_controller_execute($controller, $arguments);
+    $result = services_controller_execute($controller, $arguments, $auth_arguments);
     $formatter = $formats[$response_format];
 
     // Set the content type and render output

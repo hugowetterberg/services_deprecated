@@ -47,7 +47,7 @@ function _services_build_resources($endpoint_name = '') {
       }
     }
     if (!isset($controller['access callback'])) {
-      $controller['access callback'] = 'services_access_menu';
+      $controller['access callback'] = 'user_access';
     }
   }
   drupal_alter('services_resources_controller_post_processing', $controllers, $endpoint);

@@ -16,9 +16,9 @@ function services_sessauth_services_authentication_info() {
     'file' => 'services_sessauth.inc',
     'title' => t('Session authentication'),
     'description' => t('The default session based authentication'),
-    'alter_methods' => '_services_sessauth_alter_methods',
     'authenticate_call' => '_services_sessauth_authenticate_call',
     'security_settings' => '_services_sessauth_security_settings',
+    'controller_settings' => '_services_sessauth_security_settings',
   );
 }
 

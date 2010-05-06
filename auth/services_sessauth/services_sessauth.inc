@@ -6,41 +6,17 @@
  *  The implementation of the session authentication scheme
  */
 
-function _services_sessauth_alter_methods(&$methods) {
-  // Skip this if no services have been activated
-  if (!is_array($methods) || empty($methods)) {
-    return;
-  }
-
-  // sessid arg
-  $arg_sessid = array(
-    'name' => 'sessid',
-    'type' => 'string',
-    'description' => t('A valid sessid.'),
-  );
-
-  foreach ($methods as $key => &$method) {
-    // set method defaults
-    switch ($method['method']) {
-      case 'search.users':
-        $method['auth'] = FALSE;
-        break;
-      default:
-        $method['auth'] = TRUE;
-        array_push($method['args'], $arg_sessid);
-    }
-  }
-}
-
-function _services_sessauth_authenticate_call($method, $method_name, &$args) {
-  // Add additonal processing for methods requiring session
-  $session_backup = NULL;
-  if ($method['auth']) {
-    $sessid = array_pop($args);
+function _services_sessauth_authenticate_call($settings, $method, &$args, $auth_args) {
+  // Anyone passing in a specific session id to use, should do so in the 
+  // 'sessid' key. Otherwise, just use the current session (IE do nothing.)
+  if (isset($auth_args['sessid'])) {
+    // Add additonal processing for methods requiring session
+    $session_backup = NULL;
+    $sessid = $auth_args['sessid'];
     if (empty($sessid)) {
       return t('Invalid sessid.');
     }
-    $session_backup = services_session_load($sessid['sessid']);
+    $session_backup = services_session_load($sessid);
   }
 }
 

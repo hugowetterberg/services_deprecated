@@ -2,7 +2,6 @@
 // $Id: services.module,v 1.8.2.88.2.6 2009/09/05 13:57:58 marcingy Exp $
 
 /**
- * @author Services Dev Team
  * @file
  *  Provides a generic but powerful API for web services.
  */

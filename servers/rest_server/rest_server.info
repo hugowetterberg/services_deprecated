@@ -1,8 +1,0 @@
-; $Id$
-name = REST Server
-description = Provides an REST server.
-package = Services - servers
-dependencies[] = services
-dependencies[] = inputstream
-dependencies[] = autoload
-core = 6.x

@@ -56,3 +56,28 @@ function rest_server_server() {
     }
   }
 }
+
+function rest_server_services_resources_alter($resources, $endpoint) {
+  if (isset($resources['node'])) {
+    if (!isset($resources['node']['retrieve']['models'])) {
+      $resources['node']['retrieve']['models'] = array();
+    }
+    $resources['node']['retrieve']['models'] += array(
+      'ResourceFeedModel' => array(
+        'class' => 'NodeResourceFeedModel',
+        'arguments' => array('source' => 'single'),
+      ),
+    );
+    if (!isset($resources['node']['index']['models'])) {
+      $resources['node']['index']['models'] = array();
+    }
+    $resources['node']['index']['models'] += array(
+      'ResourceFeedModel' => array(
+        'class' => 'NodeResourceFeedModel',
+      ),
+      'ResourceTimeFeedModel' => array(
+        'class' => 'NodeResourceFeedModel',
+      ),
+    );
+  }
+}

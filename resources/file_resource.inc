@@ -1,5 +1,88 @@
 <?php
-// $Id:
+// $Id$
+
+/**
+ * THERE SHOULD BE NO UPDATE!!!
+ * Drupal doesn't allow updating or replacing a file in the files table.
+ * If you need to, create a new file and remove the old file.
+ */
+function _file_resource_definition() {
+  return array(
+    'file' => array(
+
+      'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/file_resource'),
+
+      'create' => array(
+        'help' => 'Creates a file',
+        'callback' => '_file_resource_create',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('create'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'file',
+            'type' => 'struct',
+            'description'    => t('An object representing a file.'),
+            'source' => 'data',
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'retrieve' => array(
+        'help' => 'Retrieves a file',
+        'callback' => '_file_resource_retrieve',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('view'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'fid',
+            'type' => 'int',
+            'description' => 'The fid of the file to retrieve.',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'delete' => array(
+        'help' => 'Deletes a file',
+        'callback' => '_file_resource_delete',
+        'access callback' => '_file_resource_access',
+        'access arguments' => array('delete'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'cid',
+            'type' => 'int',
+            'description' => 'The id of the file to delete',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+      'actions' => array(
+        'nodeFiles' => array(
+          'help'   => t('This method returns the files on a given node.'),
+          'access callback' => '_file_resource_node_access',
+          'access arguments' => array('view'),
+          'access arguments append' => TRUE,
+          'callback' => '_file_resource_load_node_files',
+          'args'     => array(
+            array(
+              'name'         => 'nid',
+              'type'         => 'int',
+              'description'  => t('The node id to load files for.'),
+              'source'       => array('path' => '0'),
+              'optional'     => FALSE,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
 
 /**
  * Adds a new file and returns the fid.
@@ -9,7 +92,6 @@
  * @return
  *   Unique identifier for the file (fid) or errors if there was a problem.
  */
-
 function _file_resource_create($file) {
   global $user;
   $file = (object) $file;

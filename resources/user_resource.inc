@@ -1,6 +1,111 @@
 <?php
 // $Id: node_resource.inc,v 1.1 2010/03/08 20:01:41 hugowetterberg Exp $
 
+function _user_resource_definition() {
+  return array(
+    'user' => array(
+
+      'file' => array('type' => 'inc', 'module' => 'services', 'name' => 'resources/user_resource'),
+
+      'retrieve' => array(
+        'help' => 'Retrieves a user',
+        'callback' => '_user_resource_retrieve',
+        'access arguments' => array('access user profiles'), // this is probably not enough, doesn't block things like pass and email
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'uid',
+            'type' => 'int',
+            'description' => 'The uid of the user to retrieve.',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'create' => array(
+        'help' => 'Creates a user',
+        'callback' => '_user_resource_create',
+        'access arguments' => array('administer users'),
+        'access arguments append' => TRUE  ,
+        'args' => array(
+          array(
+            'name' => 'account',
+            'type' => 'struct',
+            'description' => 'The user object',
+            'source' => 'data',
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'update' => array(
+        'help' => 'Updates a user',
+        'callback' => '_user_resource_update',
+        'access callback' => '_user_resource_update_access',
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'data',
+            'type' => 'struct',
+            'description' => 'The user object with updated information',
+            'source' => 'data',
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+     
+      'delete' => array(
+        'help' => 'Deletes a user',
+        'callback' => '_user_resource_delete',
+        'access arguments' => array('administer users'),
+        'access arguments append' => TRUE,
+        'args' => array(
+          array(
+            'name' => 'nid',
+            'type' => 'int',
+            'description' => 'The id of the note to delete',
+            'source' => array('path' => '0'),
+            'optional' => FALSE,
+          ),
+        ),
+      ),
+
+      'actions' => array(
+        'login' => array(
+          'help' => 'Login a user for a new session',
+          'callback' => '_user_resource_login',
+          'args' => array(
+            array(
+              'name' => 'username',
+              'type' => 'string',
+              'description' => 'A valid username',
+              'source' => array('data'),
+              'optional' => FALSE,
+            ),
+            array(
+              'name' => 'password',
+              'type' => 'string',
+              'description' => 'A valid password',
+              'source' => array('data'),
+              'optional' => FALSE,
+            ),
+          ),
+        ),
+
+        'logout' => array(
+          'help' => 'Logout a user session',
+          'callback' => '_user_resource_logout',
+          'args' => array(
+            array(
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 /**
  * Get user details.
  *

@@ -26,5 +26,11 @@ function _rest_server_autoload_info() {
     'ResourceTimeFeedModelItem' => array(
       'file' => 'includes/models.inc',
     ),
+    'NodeResourceFeedModel' => array(
+      'file' => 'includes/node_resource.models.inc',
+    ),
+    'NodeResourceViewFeedModel' => array(
+      'file' => 'includes/node_resource.models.inc',
+    ),
   );
 }

@@ -197,6 +197,31 @@ function _services_process_resource($name, &$resource, &$controllers) {
 }
 
 /**
+ * Supplies the resource definitions for Drupal core data
+ *
+ * @return array
+ */
+function _services_core_resources() {
+  require_once("resources/comment_resource.inc");
+  require_once("resources/file_resource.inc");
+  require_once("resources/node_resource.inc");
+  require_once("resources/system_resource.inc");
+  require_once("resources/taxonomy_resource.inc");
+  require_once("resources/user_resource.inc");
+
+  $resources = array();
+
+  $resources += _comment_resource_definition();
+  $resources += _file_resource_definition();
+  $resources += _node_resource_definition();
+  $resources += _system_resource_definition();
+  $resources += _taxonomy_resource_definition();
+  $resources += _user_resource_definition();
+
+  return $resources;
+}
+
+/**
  * Invokes all hook_service and translates them to actions on resources.
  *
  * @return array

@@ -67,6 +67,9 @@ class RESTServer {
     $data = array();
     $arguments = $this->getControllerArguments($controller, $path, $method, $data);
 
+    // Any authentication needed for REST Server must be set in the cookies
+    $auth_arguments = $_COOKIE;
+
     $formats = $this->responseFormatters();
 
     // Negotiate response format based on accept-headers if we
@@ -87,8 +90,11 @@ class RESTServer {
       }
 
       // Get the best matching format, default to json
-      $mime = new Mimeparse();
-      $mime_type = $mime->best_match($mime_candidates, $_SERVER['HTTP_ACCEPT']);
+      if (isset($_SERVER['HTTP_ACCEPT'])) {
+        $mime = new Mimeparse();
+        $mime_type = $mime->best_match($mime_candidates, $_SERVER['HTTP_ACCEPT']);
+      }
+
       if ($mime_type) {
         $response_format = $mime_map[$mime_type];
       }
@@ -134,7 +140,7 @@ class RESTServer {
       }
     }
 
-    $result = services_controller_execute($controller, $arguments);
+    $result = services_controller_execute($controller, $arguments, $auth_arguments);
     $formatter = $formats[$response_format];
 
     // Set the content type and render output
@@ -524,7 +530,11 @@ class RESTServer {
         'DELETE' => 'delete',
       );
       if (isset($resource[$action_mapping[$method]])) {
-        return $resource[$action_mapping[$method]];
+        $controller = $resource[$action_mapping[$method]];
+        if (isset($resource['file'])) {
+          $controller['file'] = $resource['file'];
+        }
+        return $controller;
       }
     }
     // Detect relationship requests

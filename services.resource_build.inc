@@ -105,8 +105,8 @@ function _services_apply_endpoint(&$resources, $endpoint, $strict = TRUE) {
         if (isset($resource[$op])) {
           $cop = isset($cres['operations'][$op]) ? $cres['operations'][$op] : array();
           $resource[$op]['endpoint'] = $cop;
-          if ($strict && empty($cop)) {
-            unset($resource['' . $op]);
+          if ($strict && (empty($cop) || !$cop['enabled'])) {
+            unset($resource[$op]);
           }
         }
       }
@@ -116,9 +116,9 @@ function _services_apply_endpoint(&$resources, $endpoint, $strict = TRUE) {
         if (!empty($resource[$class])) {
           foreach ($resource[$class] as $op => $def) {
             $cop = isset($cres[$class][$op]) ? $cres[$class][$op] : array();
-            if (empty($cop)) {
+            if (empty($cop) || !$cop['enabled']) {
               if ($strict) {
-                unset($resource['' . $op]);
+                unset($resource[$class][$op]);
               }
             }
             else {

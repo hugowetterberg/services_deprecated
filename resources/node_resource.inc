@@ -41,6 +41,13 @@ function _node_resource_definition() {
         'callback' => '_node_resource_update',
         'args' => array(
           array(
+            'name' => 'nid',
+            'optional' => FALSE,
+            'source' => array('path' => 0),
+            'type' => 'int',
+            'description' => 'The nid of the node to get',
+          ),
+          array(
             'name' => 'node',
             'optional' => FALSE,
             'source' => 'data',

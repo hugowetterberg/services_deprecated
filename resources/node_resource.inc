@@ -103,7 +103,7 @@ function _node_resource_definition() {
           ),
         ),
         'access arguments' => array('access content'),
-        'access arguments append' => TRUE,
+        'access arguments append' => FALSE,
       ),
     ),
   );

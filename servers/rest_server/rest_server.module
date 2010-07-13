@@ -21,17 +21,14 @@ function rest_server_enable() {
   autoload_flush_caches();
 }
 
-function rest_server_server() {
-  $endpoint_path = services_get_server_info('endpoint_path', 'services/rest');
-  $canonical_path = trim(substr($_GET['q'], drupal_strlen($endpoint_path)), '/');
-
-  if (empty($canonical_path)) {
+function rest_server_server($context) {
+  if (empty($context->canonicalPath)) {
     return '';
   }
 
   try {
     $server = new RESTServer();
-    return $server->handle($canonical_path, $endpoint_path);
+    return $server->handle($context);
   }
   catch (Exception $e) {
     $code = $e->getCode();

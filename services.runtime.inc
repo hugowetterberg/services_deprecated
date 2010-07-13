@@ -81,6 +81,64 @@ class ServicesArgumentException extends ServicesException {
 }
 
 /**
+ * Constructs a services http context attribute from the current request.
+ *
+ * @param string $context
+ * @return object
+ */
+function services_http_context_from_request() {
+  $context = new stdClass();
+
+  $context->path = $_GET['q'];
+  $context->get = $_GET;
+  $context->post = $_POST;
+  $context->cookies = $_COOKIE;
+
+  $context->headers = array();
+  foreach ($_SERVER as $key => $value) {
+    if (substr($key, 0, 5) == 'HTTP_') {
+      $header = strtolower(substr(str_replace('_', '-', $key), 5));
+      $context->headers[$header] = $value;
+    }
+    else {
+      $context->serverVars[$key] = $value;
+    }
+  }
+
+  if (module_exists('inputstream')) {
+    $context->inputStream = 'drupal://input';
+  }
+  else {
+    $context->inputStream = 'php://input';
+  }
+
+  return $context;
+}
+
+/**
+ * Executes services using the provided context.
+ *
+ * @param object $context
+ * @return string
+ */
+function services_execute($context) {
+  $server = $context->endpoint->server;
+
+  if (function_exists($server . '_server')) {
+    try {
+      // Call the server
+      return call_user_func($server . '_server', $context);
+    }
+    catch (Exception $e) {
+      throw new ServicesException("An error occured while handling the request", 500, $e);
+    }
+  }
+  else {
+    throw new ServicesException("Could not find the server implementation for {$server}", 404, $context);
+  }
+}
+
+/**
  * Performs access checks and executes a services controller.
  * This method is called by server implementations.
  *
@@ -253,69 +311,6 @@ function services_resource_uri($path) {
     return call_user_func($formatter, $path);
   }
   return NULL;
-}
-
-/**
- * Sets a server info value
- *
- * @param string $key
- *  The key of the server info value.
- * @param mixed $value
- *  The value.
- * @return void
- */
-function services_set_server_info($key, $value) {
-  $info = services_server_info_object();
-  $info->$key = $value;
-}
-
-/**
- * Sets multiple server info values from a associative array.
- *
- * @param array $values
- *  An associative array containing server info values.
- * @return void
- */
-function services_set_server_info_from_array($values) {
-  $info = services_server_info_object();
-  foreach ($values as $key => $value) {
-    $info->$key = $value;
-  }
-}
-
-/**
- * Gets a server info value.
- *
- * @param string $key
- *  The key for the server info value.
- * @param mixed $default
- *  The default value to return if the value isn't defined.
- * @return mixed
- *  The server info value.
- */
-function services_get_server_info($key, $default = NULL) {
-  $info = services_server_info_object();
-  $value = $default;
-  if (isset($info->$key)) {
-    $value = $info->$key;
-  }
-  return $value;
-}
-
-/**
- * Gets the server info object.
- *
- * @param bool $reset
- *  Pass TRUE if the server info object should be reset.
- * @return object
- *  Returns the server info object.
- */
-function services_server_info_object($reset = FALSE) {
-  static $info;
-  if (!$info) {
-    $info = new stdClass();
-  }
-  return $info;
 }
 
 /**

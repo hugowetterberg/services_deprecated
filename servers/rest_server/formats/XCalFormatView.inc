@@ -4,7 +4,7 @@
 class XCalFormatView extends RESTServerView {
   const DATE_FORMAT = 'Ymd\This';
 
-  function render() {
+  function render($context) {
     $ical = isset($this->arguments['transform']) && $this->arguments['transform']=='ical';
     if ($ical) {
       return $this->render_ical();

@@ -12,16 +12,16 @@ abstract class RESTServerView {
     $this->arguments = $arguments;
   }
 
-  public abstract function render();
+  public abstract function render($context);
 }
 
 class RESTServerViewBuiltIn extends RESTServerView {
-  public function render() {
+  public function render($context) {
     switch ($this->arguments['format']) {
       case 'json':
-        return $this->render_json($this->model);
+        return $this->render_json($context, $this->model);
       case 'jsonp':
-        return $this->render_json($this->model, TRUE);
+        return $this->render_json($context, $this->model, TRUE);
       case 'php':
         return $this->render_php($this->model);
       case 'xml':
@@ -34,10 +34,10 @@ class RESTServerViewBuiltIn extends RESTServerView {
     return '';
   }
 
-  private function render_json($data, $jsonp=FALSE) {
+  private function render_json($context, $data, $jsonp=FALSE) {
     $json = json_encode($data);
-    if ($jsonp && isset($_GET['callback'])) {
-      return sprintf('%s(%s);', $_GET['callback'], $json);
+    if ($jsonp && isset($context->http->get['callback'])) {
+      return sprintf('%s(%s);', $context->http->get['callback'], $json);
     }
     return $json;
   }

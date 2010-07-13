@@ -191,28 +191,42 @@ function services_get_servers() {
  * @return void
  */
 function services_endpoint_callback($endpoint_name) {
+  global $user;
   module_load_include('runtime.inc', 'services');
 
-  $endpoint = services_endpoint_load($endpoint_name);
-  $server = $endpoint->server;
+  $context = new stdClass();
 
-  if (function_exists($server . '_server')) {
-    // call the server
-    services_set_server_info_from_array(array(
-      'module'        => $server,
-      'endpoint'      => $endpoint_name,
-      'endpoint_path' => $endpoint->path,
-      'drupal_path'   => getcwd(),
-    ));
+  // Add context information for current request.
+  $context->http = services_http_context_from_request();
+  $context->user = $user;
+  $context->session = &$_SESSION;
+  $context->drupalPath = getcwd();
+  $context->endpoint = services_endpoint_load($endpoint_name);
+  $context->canonicalPath = trim(substr($context->http->path, drupal_strlen($context->endpoint->path)), '/');
 
-    print call_user_func($server . '_server');
-
-    // Do not let this output
-    module_invoke_all('exit');
-    exit;
+  // Allow other modules to add to or alter the context.
+  foreach (module_implements('services_context_build') as $module) {
+    call_user_func('services_context_build', $context);
   }
-  // return 404 if the server doesn't exist
-  drupal_not_found();
+
+  try {
+    // Execute the context.
+    print services_execute($context);
+  }
+  catch (ServicesException $e) {
+    switch ($e->getCode()) {
+      case 404:
+        drupal_set_header('HTTP/1.0 404 Not found: ' . $e->getMessage());
+        break;
+      case 500:
+        drupal_set_header('HTTP/1.0 500 Server error: ' . $e->getMessage());
+        break;
+    }
+  }
+
+  // Do not let this output
+  module_invoke_all('exit');
+  exit;
 }
 
 /**
